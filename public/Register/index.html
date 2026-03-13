@@ -213,8 +213,10 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../assets/js/core.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
-    await Auth.redirectIfAuth();
+document.addEventListener('DOMContentLoaded', () => {
+    db().auth.getSession().then(({ data: { session } }) => {
+        if (session) window.location.replace('/app/');
+    });
     // Username validation debounce
     let usernameTimer;
     document.getElementById('username').addEventListener('input', e => {
