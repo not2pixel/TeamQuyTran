@@ -773,42 +773,16 @@ img { display: block; max-width: 100%; }
     <div class="auth-logo">
       <div class="auth-logo-mark">TQ</div>
       <div class="auth-title">TeamQuyTran</div>
-      <div class="auth-sub">Private Chat Network</div>
+      <div class="auth-sub">Nhập mã truy cập để vào</div>
     </div>
-    <div class="auth-tabs">
-      <button class="auth-tab on" onclick="switchTab('login')">Đăng nhập</button>
-      <button class="auth-tab"    onclick="switchTab('register')">Đăng ký</button>
+    <div id="code-err" class="alert alert-err"></div>
+    <div class="field">
+      <label class="label">Mã truy cập</label>
+      <input class="inp" id="code-inp" placeholder="Nhập code của bạn..."
+        onkeydown="if(event.key==='Enter')doCodeLogin()"
+        style="font-family:var(--mono);font-size:18px;letter-spacing:0.1em;text-align:center">
     </div>
-
-    <!-- Login -->
-    <div class="auth-view on" id="v-login">
-      <div id="login-err" class="alert alert-err"></div>
-      <div class="field"><label class="label">Email</label><input class="inp" id="l-email" type="email" placeholder="email@example.com"></div>
-      <div class="field"><label class="label">Mật khẩu</label><input class="inp" id="l-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <button class="btn btn-primary w-full" id="login-btn" onclick="doLogin()">ĐĂNG NHẬP</button>
-      <div style="text-align:center;margin-top:12px"><a href="#" onclick="switchTab('forgot');return false" style="font-size:13px;color:var(--t2)">Quên mật khẩu?</a></div>
-    </div>
-
-    <!-- Register -->
-    <div class="auth-view" id="v-register">
-      <div id="reg-err" class="alert alert-err"></div>
-      <div id="reg-ok"  class="alert alert-ok"></div>
-      <div class="field"><label class="label">Username</label><input class="inp" id="r-user" placeholder="username" oninput="checkUsername(this.value)"></div>
-      <div id="user-check" style="font-size:12px;margin-top:-10px;margin-bottom:10px;font-family:var(--mono)"></div>
-      <div class="field"><label class="label">Email</label><input class="inp" id="r-email" type="email" placeholder="email@example.com"></div>
-      <div class="field"><label class="label">Mật khẩu</label><input class="inp" id="r-pass" type="password" placeholder="••••••••"></div>
-      <button class="btn btn-primary w-full" id="reg-btn" onclick="doRegister()">ĐĂNG KÝ</button>
-    </div>
-
-    <!-- Forgot -->
-    <div class="auth-view" id="v-forgot">
-      <div id="forgot-msg" class="alert alert-ok"></div>
-      <div class="field"><label class="label">Email</label><input class="inp" id="f-email" type="email" placeholder="email@example.com"></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" onclick="switchTab('login')">← Quay lại</button>
-        <button class="btn btn-primary" style="flex:1" onclick="doForgot()">GỬI LINK</button>
-      </div>
-    </div>
+    <button class="btn btn-primary w-full" id="code-btn" onclick="doCodeLogin()">VÀO CHAT</button>
   </div>
 </div>
 
@@ -995,8 +969,7 @@ const Bot = {
     };
     let reply;
     try {
-      const sess = await db.auth.getSession();
-      const tok = sess.data.session?.access_token;
+      const tok = null; // no Supabase auth session in code-based auth
       const r = await fetch(CFG.BOT_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(tok ? { 'Authorization': `Bearer ${tok}` } : {}) },
@@ -1055,68 +1028,30 @@ const App = {
 };
 
 /* =================================================================
-   BOOT
+   BOOT — Code-based auth, no Supabase Auth
    ================================================================= */
 (async () => {
-  db.auth.onAuthStateChange(async (event, session) => {
-    console.log('[TQT] auth event:', event, !!session);
-    if (event === 'SIGNED_OUT') { resetApp(); showAuth(); return; }
-    if (event === 'INITIAL_SESSION') {
-      if (session) await initApp(session);
-      else showAuth();
-      return;
-    }
-    if (event === 'SIGNED_IN' && session && !App.user) {
-      await initApp(session);
-    }
-  });
+  const saved = localStorage.getItem('tqt-session');
+  if (saved) {
+    try {
+      const sess = JSON.parse(saved);
+      const { data: profile, error } = await db.from('profiles').select('*').eq('id', sess.user_id).single();
+      if (profile && !profile.is_banned) {
+        await loadAppWithProfile(profile);
+        return;
+      }
+    } catch {}
+  }
+  showAuth();
 })();
 
 function showAuth() {
   hideGate();
   document.getElementById('auth-page').classList.add('show');
+  setTimeout(() => document.getElementById('code-inp')?.focus(), 100);
 }
 
 function hideGate() { document.getElementById('gate').classList.add('hide'); }
-
-async function initApp(session) {
-  if (App.user) return;
-  App.user = session.user;
-  let p = await fetchProfile(session.user.id);
-  if (!p) {
-    await new Promise(r => setTimeout(r, 1000));
-    p = await fetchProfile(session.user.id);
-  }
-  if (!p) {
-    App.user = null; // reset so retry works
-    hideGate();
-    showAuth();
-    Toast.error('Không tải được profile. Liên hệ admin.');
-    return;
-  }
-  if (p.is_banned) {
-    await db.auth.signOut();
-    hideGate();
-    showAuth();
-    Toast.error(`Tài khoản bị khóa: ${p.ban_reason || 'Vi phạm quy tắc.'}`);
-    return;
-  }
-  App.profile = p;
-  hideGate();
-  document.getElementById('auth-page').classList.remove('show');
-  document.getElementById('app').classList.add('show');
-  renderSelf();
-  setStatus('online');
-  window.addEventListener('beforeunload', () => setStatus('offline'));
-  await loadServers();
-  subscribePresence();
-}
-
-async function fetchProfile(uid) {
-  const { data, error } = await db.from('profiles').select('*').eq('id', uid).single();
-  if (error) { console.warn('[TQT profile]', error.code, error.message); return null; }
-  return data;
-}
 
 function resetApp() {
   App.user = null; App.profile = null; App.server = null; App.channel = null;
@@ -1140,84 +1075,12 @@ function renderSelf() {
 /* =================================================================
    AUTH FORMS
    ================================================================= */
-function switchTab(tab) {
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('on'));
-  document.querySelectorAll('.auth-view').forEach(v => v.classList.remove('on'));
-  const tabs = ['login', 'register', 'forgot'];
-  const idx = tabs.indexOf(tab);
-  if (idx >= 0) document.querySelectorAll('.auth-tab')[idx]?.classList.add('on');
-  document.getElementById(`v-${tab}`)?.classList.add('on');
-}
-
-async function doLogin() {
-  const email = document.getElementById('l-email').value.trim();
-  const pass   = document.getElementById('l-pass').value;
-  if (!email || !pass) { showAlert('login-err', 'Vui lòng điền đầy đủ.'); return; }
-  const btn = document.getElementById('login-btn');
-  btn.disabled = true; btn.textContent = 'ĐANG XỬ LÝ...';
-  try {
-    const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
-    if (error) {
-      const msgs = {
-        'Invalid login credentials': 'Email hoặc mật khẩu sai.',
-        'Email not confirmed': 'Email chưa xác nhận.',
-        'Too many requests': 'Quá nhiều lần thử, thử lại sau.'
-      };
-      showAlert('login-err', msgs[error.message] || error.message);
-      return;
-    }
-  } catch (e) {
-    showAlert('login-err', 'Lỗi: ' + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'ĐĂNG NHẬP';
-  }
-}
-
-let _userCheckTimer;
-async function checkUsername(v) {
-  const el = document.getElementById('user-check');
-  if (!v || v.length < 3) { el.textContent = ''; return; }
-  if (!/^[a-z0-9_]+$/.test(v)) { el.style.color = 'var(--red)'; el.textContent = '✗ Chỉ dùng a-z, 0-9, _'; return; }
-  clearTimeout(_userCheckTimer);
-  _userCheckTimer = setTimeout(async () => {
-    const { data } = await db.from('profiles').select('id').eq('username', v).maybeSingle();
-    if (data) { el.style.color = 'var(--red)'; el.textContent = '✗ Username đã tồn tại'; }
-    else       { el.style.color = 'var(--green)'; el.textContent = '✓ Có thể dùng'; }
-  }, 400);
-}
-
-async function doRegister() {
-  const username = document.getElementById('r-user').value.trim().toLowerCase();
-  const email    = document.getElementById('r-email').value.trim();
-  const pass     = document.getElementById('r-pass').value;
-  if (!username || !email || !pass) { showAlert('reg-err', 'Vui lòng điền đầy đủ.'); return; }
-  if (pass.length < 6) { showAlert('reg-err', 'Mật khẩu ít nhất 6 ký tự.'); return; }
-  const { data: ex } = await db.from('profiles').select('id').eq('username', username).maybeSingle();
-  if (ex) { showAlert('reg-err', 'Username đã tồn tại.'); return; }
-  const btn = document.getElementById('reg-btn');
-  btn.disabled = true; btn.textContent = 'ĐANG XỬ LÝ...';
-  try {
-    const { error } = await db.auth.signUp({
-      email, password: pass,
-      options: { data: { username, display_username: username } }
-    });
-    if (error) { showAlert('reg-err', error.message); return; }
-    showAlert('reg-ok', 'Đăng ký thành công! Kiểm tra email để xác nhận.', true);
-  } catch (e) {
-    showAlert('reg-err', 'Lỗi: ' + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'ĐĂNG KÝ';
-  }
-}
-
-async function doForgot() {
-  const email = document.getElementById('f-email').value.trim();
-  if (!email) return;
-  const { error } = await db.auth.resetPasswordForEmail(email);
-  if (error) Toast.error(error.message);
-  else document.getElementById('forgot-msg').textContent = 'Đã gửi link reset về ' + email;
-  document.getElementById('forgot-msg').classList.add('show');
-}
+/* =================================================================
+   AUTH — Code-based login (no email/password)
+   - Bảng auth_codes: id, code, user_id (FK profiles.id), created_by, created_at
+   - Admin tạo code trong DB, phát cho user
+   - Session lưu localStorage key 'tqt-session'
+   ================================================================= */
 
 function showAlert(id, msg, isOk = false) {
   const el = document.getElementById(id);
@@ -1226,9 +1089,74 @@ function showAlert(id, msg, isOk = false) {
   el.className = `alert ${isOk ? 'alert-ok' : 'alert-err'} show`;
 }
 
+async function doCodeLogin() {
+  const code = document.getElementById('code-inp').value.trim().toUpperCase();
+  if (!code) { showAlert('code-err', 'Nhập mã truy cập.'); return; }
+  const btn = document.getElementById('code-btn');
+  btn.disabled = true; btn.textContent = 'ĐANG XÁC NHẬN...';
+  try {
+    // Tìm code trong DB (dùng service role qua anon — bảng auth_codes có policy public read)
+    const { data, error } = await db.from('auth_codes')
+      .select('*, profiles(*)')
+      .eq('code', code)
+      .single();
+    if (error || !data) {
+      showAlert('code-err', 'Mã không đúng hoặc không tồn tại.');
+      return;
+    }
+    if (!data.profiles) {
+      showAlert('code-err', 'Tài khoản không tồn tại. Liên hệ admin.');
+      return;
+    }
+    if (data.profiles.is_banned) {
+      showAlert('code-err', `Tài khoản bị khóa: ${data.profiles.ban_reason || 'Vi phạm quy tắc.'}`);
+      return;
+    }
+    // Lưu session vào localStorage
+    localStorage.setItem('tqt-session', JSON.stringify({
+      user_id: data.user_id,
+      code: code,
+      logged_in_at: new Date().toISOString()
+    }));
+    // Load app trực tiếp với profile
+    await loadAppWithProfile(data.profiles);
+  } catch (e) {
+    showAlert('code-err', 'Lỗi: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'VÀO CHAT';
+  }
+}
+
+async function loadAppWithProfile(profile) {
+  App.user = { id: profile.id };
+  App.profile = profile;
+  hideGate();
+  document.getElementById('auth-page').classList.remove('show');
+  document.getElementById('app').classList.add('show');
+  renderSelf();
+  await updateStatus('online');
+  window.addEventListener('beforeunload', () => updateStatus('offline'));
+  await loadServers();
+  subscribePresence();
+}
+
+async function updateStatus(st) {
+  if (!App.user) return;
+  await db.from('profiles').update({ status: st, last_seen: new Date().toISOString() })
+    .eq('id', App.user.id);
+  if (App.profile) App.profile.status = st;
+}
+
 async function doSignOut() {
-  setStatus('offline');
-  await db.auth.signOut();
+  await updateStatus('offline');
+  localStorage.removeItem('tqt-session');
+  App.user = null; App.profile = null;
+  App.subs.forEach(s => s.unsubscribe()); App.subs = [];
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('code-inp').value = '';
+  showAlert('code-err', '', false);
+  document.getElementById('code-err').classList.remove('show');
+  showAuth();
   closeModal();
 }
 
@@ -1882,12 +1810,7 @@ function showStatusCtx(e) {
   setTimeout(() => document.addEventListener('click', () => m.remove(), { once: true }), 0);
 }
 
-async function setStatus(st) {
-  if (!App.user) return;
-  await db.from('profiles').update({ status: st }).eq('id', App.user.id);
-  if (App.profile) App.profile.status = st;
-  renderSelf();
-}
+async function setStatus(st) { await updateStatus(st); renderSelf(); }
 
 /* =================================================================
    SERVER MANAGEMENT
@@ -1980,8 +1903,7 @@ async function showAdminPanel() {
 
 async function approveReq(id, email, username) {
   try {
-    const sess = await db.auth.getSession();
-    const tok = sess.data.session?.access_token;
+    const tok = null; // no Supabase auth session
     const r = await fetch('/api/approve-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tok}` },
