@@ -1095,38 +1095,25 @@ async function doCodeLogin() {
   const btn = document.getElementById('code-btn');
   btn.disabled = true; btn.textContent = 'ĐANG XÁC NHẬN...';
   try {
-    // Dùng fetch trực tiếp với anon key để tránh lỗi auth
-    const headers = { 'apikey': CFG.SUPA_ANON, 'Authorization': `Bearer ${CFG.SUPA_ANON}` };
-
-    // Bước 1: tìm code
-    const r1 = await fetch(`${CFG.SUPA_URL}/rest/v1/auth_codes?select=id,user_id&code=eq.${encodeURIComponent(code)}`, { headers });
-    const rows = await r1.json();
-    if (!r1.ok || !rows.length) {
-      showAlert('code-err', 'Mã không đúng hoặc không tồn tại.');
-      return;
-    }
-    const codeRow = rows[0];
-
-    // Bước 2: lấy profile
-    const r2 = await fetch(`${CFG.SUPA_URL}/rest/v1/profiles?select=*&id=eq.${codeRow.user_id}`, { headers });
-    const profiles = await r2.json();
-    const data = profiles[0];
-    if (!data) {
-      showAlert('code-err', 'Tài khoản không tồn tại. Liên hệ admin.');
-      return;
-    }
-    if (data.is_banned) {
-      showAlert('code-err', `Tài khoản bị khóa: ${data.ban_reason || 'Vi phạm quy tắc.'}`);
+    // Gọi API server-side (không hardcode key)
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const result = await r.json();
+    if (!r.ok) {
+      showAlert('code-err', result.error || 'Lỗi không xác định.');
       return;
     }
     // Lưu session vào localStorage
     localStorage.setItem('tqt-session', JSON.stringify({
-      user_id: codeRow.user_id,
+      user_id: result.profile.id,
       code: code,
       logged_in_at: new Date().toISOString()
     }));
-    // Load app trực tiếp với profile
-    await loadAppWithProfile(data);
+    // Load app
+    await loadAppWithProfile(result.profile);
   } catch (e) {
     showAlert('code-err', 'Lỗi: ' + e.message);
   } finally {
