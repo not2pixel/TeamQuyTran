@@ -1093,6 +1093,13 @@ async function initApp(session) {
     Toast.error('Không tải được profile. Liên hệ admin.');
     return;
   }
+  if (p.is_banned) {
+    await db.auth.signOut();
+    hideGate();
+    showAuth();
+    Toast.error(`Tài khoản bị khóa: ${p.ban_reason || 'Vi phạm quy tắc.'}`);
+    return;
+  }
   App.profile = p;
   hideGate();
   document.getElementById('auth-page').classList.remove('show');
@@ -1157,13 +1164,6 @@ async function doLogin() {
       };
       showAlert('login-err', msgs[error.message] || error.message);
       return;
-    }
-    // Wait for session to be fully set before querying
-    await new Promise(r => setTimeout(r, 300));
-    const { data: pf } = await db.from('profiles').select('is_banned,ban_reason').eq('id', data.user.id).single();
-    if (pf?.is_banned) {
-      await db.auth.signOut();
-      showAlert('login-err', `Tài khoản bị khóa: ${pf.ban_reason || 'Vi phạm quy tắc.'}`);
     }
   } catch (e) {
     showAlert('login-err', 'Lỗi: ' + e.message);
