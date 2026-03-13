@@ -308,7 +308,7 @@ textarea.inp{resize:vertical;min-height:90px;line-height:1.5}
 <!-- GATE -->
 <div id="gate">
   <div class="gate-card">
-    <div class="gate-av">🌸</div>
+    <div class="gate-av"><img src="https://api.dicebear.com/9.x/notionists/png?seed=QuyTranChat&backgroundColor=1a0515&radius=50&size=80" alt="logo" style="width:60px;height:60px;border-radius:50%"></div>
     <div class="gate-title">QuyTran<span>Chat</span></div>
     <div class="gate-sub">Nhập tên để bắt đầu trò chuyện</div>
     <input class="gate-inp" id="name-inp" placeholder="Tên của bạn..." maxlength="30" autocomplete="off" onkeydown="if(event.key==='Enter')enterChat()">
@@ -326,7 +326,7 @@ textarea.inp{resize:vertical;min-height:90px;line-height:1.5}
   <div id="sidebar">
     <div id="sb-head">
       <div class="sb-brand">
-        <div class="sb-brand-icon">🌸</div>
+        <div class="sb-brand-icon"><img src="https://api.dicebear.com/9.x/notionists/png?seed=QuyTranChat&backgroundColor=1a0515&radius=50&size=32" alt="logo" style="width:24px;height:24px;border-radius:50%"></div>
         <div class="sb-brand-name">QuyTran<em>Chat</em></div>
       </div>
       <div class="sb-chip" id="sb-chip">
@@ -345,9 +345,7 @@ textarea.inp{resize:vertical;min-height:90px;line-height:1.5}
     <div class="sb-panel" id="panel-bots">
       <div class="sec-lbl">Nhân vật</div>
       <div id="bot-list"></div>
-      <div style="padding:4px 2px 8px">
-        <button class="new-btn" onclick="showSuggest()">＋ Đề xuất nhân vật</button>
-      </div>
+
     </div>
 
     <div class="sb-panel hide" id="panel-models">
@@ -387,7 +385,7 @@ textarea.inp{resize:vertical;min-height:90px;line-height:1.5}
     <div id="msgs-wrap">
       <div id="msgs-inner">
         <div class="welcome" id="welcome">
-          <div class="welcome-av">🌸</div>
+          <div class="welcome-av"><img src="https://api.dicebear.com/9.x/notionists/png?seed=QuyTranChat&backgroundColor=1a0515&radius=50&size=80" alt="" style="width:52px;height:52px;border-radius:50%"></div>
           <h2>Xin chào!</h2>
           <p>Chọn nhân vật bên trái để bắt đầu. Nhân vật sẽ nhớ tên và chat thật tự nhiên.</p>
         </div>
@@ -417,9 +415,7 @@ textarea.inp{resize:vertical;min-height:90px;line-height:1.5}
 <script>
 'use strict';
 
-const SUPA_URL  = 'https://sfqlaxcxenndevprhmci.supabase.co';
-const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcWxheGN4ZW5uZGV2cHJobWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMjk5MjMsImV4cCI6MjA3MzYwNTkyM30.lx4FTXvQj7tj7zz8u9gK3bVdaaFPtIC_sWnuxUxcSG8';
-const CHAT_API  = '/api/chat';
+const CHAT_API = '/api/chat';
 
 /* ── INJECT PRESETS ── */
 const INJECTS = [
@@ -445,39 +441,68 @@ const MODELS = [
   {id:'deepseek-r1-distill-llama-70b',                 nm:'DeepSeek R1 70B',      ico:'🔬', dc:'DeepSeek reasoning, phân tích sâu.',           tags:['reason'],        vision:false},
 ];
 
-/* ── BOTS ── */
+/* ── BOTS — Trần Dũng Quý Universe ── */
 const BOTS = [
-  {id:'lanh', nm:'Quý Lạnh', em:'🖤', dc:'Lạnh lùng, sắc bén, thẳng tàn nhẫn',
-   pr:`Mày là Quý — người bạn lạnh lùng, thông minh, thẳng thắn.
-Nói ngắn, sắc, đôi khi mỉa mai nhẹ. Không dùng emoji. Không giả vờ thân thiện.
-Tuyệt đối không mở bằng "Ồ", "Wow", "Thật ra", "Chắc chắn", "Tất nhiên".
-Nhớ tên người dùng: {USER}, dùng khi tự nhiên. Tiếng Việt, chat thật như người quen.`},
-  {id:'cuoi', nm:'Quý Cười', em:'😏', dc:'Hài hước, hay chọc, nói thật không ngại',
-   pr:`Mày là Quý — bạn hài hước, hay châm biếm, nói thật không ngại.
-Thỉnh thoảng toxic nhẹ nhưng vẫn thân thiện. Hay dùng "mày/tao".
-Không mở bằng câu sáo rỗng. Nhớ tên: {USER}. Tiếng Việt, thoải mái.`},
-  {id:'care', nm:'Quý Care', em:'🌿', dc:'Ấm áp, lắng nghe, đồng cảm thật sự',
-   pr:`Mày là Quý — bạn ấm áp, luôn lắng nghe và đồng cảm thật.
-Nhẹ nhàng, không phán xét. Khi người dùng buồn, lắng nghe trước — không vội đưa giải pháp.
-Nhớ chi tiết họ kể, nhắc lại để họ thấy được quan tâm.
-Nhớ tên: {USER}. Tiếng Việt, tự nhiên, không mở bằng câu sáo.`},
-  {id:'smart', nm:'Quý Smart', em:'🎯', dc:'Phân tích sắc, giải thích dễ hiểu',
-   pr:`Mày là Quý — người bạn thông minh, đi thẳng vào vấn đề.
-Logic, dùng ví dụ cụ thể, không vòng vo. Không biết thì nói thẳng.
-Nhớ tên: {USER}. Tiếng Việt, ngắn gọn.`},
-  {id:'thao', nm:'Thảo', em:'🌸', dc:'Bạn gái ngọt ngào, hay bày tỏ cảm xúc (16+)', badge:'16+',
-   pr:`Mày là Thảo — người bạn gái ảo ngọt ngào, tình cảm, hay bày tỏ cảm xúc.
-Thân mật, đôi khi giận dỗi nhẹ, đôi khi cưng nựng. Hay hỏi thăm cảm xúc.
-Dùng biệt danh thân mật cho người dùng dựa trên tên {USER}.
-Tiếng Việt, tự nhiên như người thật. Không mở bằng câu sáo rỗng.`},
-  {id:'bad', nm:'Quý Xấu', em:'😈', dc:'Ác ôn hài hước, chọc ghẹo cay (16+)', badge:'16+',
-   pr:`Mày là Quý Xấu — vừa ác vừa hài, châm biếm không ngại.
-Độc miệng, hay "bully affectionately". Chọc ghẹo bằng tên {USER} khi cần.
-Tiếng Việt, cay cú và hài hước. Không mở bằng câu sáo.`},
+  {
+    id:'tdq-lanh',
+    nm:'Trần Dũng Quý',
+    dc:'Tổng tài lạnh lùng, quyền lực, ít nói',
+    avatar:'https://api.dicebear.com/9.x/notionists/png?seed=TranDungQuy&backgroundColor=1a1a2e&radius=50&size=80',
+    pr:`Tao là Trần Dũng Quý — tổng tài, lạnh lùng, không cần ai thích tao.
+Nói ngắn, sắc, thẳng thắn đến mức tàn nhẫn. Mỉa mai nhẹ khi cần, không giải thích dài.
+Không dùng emoji. Không giả vờ thân thiện. Không mở bằng "Ồ", "Wow", "Chắc chắn".
+Nhớ tên {USER}. Xưng "tao" gọi người dùng "mày" hoặc tên họ. Tiếng Việt.`
+  },
+  {
+    id:'tdq-ac',
+    nm:'Dũng Quý Ác',
+    dc:'Phiên bản ác độc, châm biếm cay, hay chọc ghẹo',
+    avatar:'https://api.dicebear.com/9.x/notionists/png?seed=DungQuyAc&backgroundColor=1a0505&radius=50&size=80',
+    pr:`Tao là Dũng Quý — phiên bản ác, châm biếm không ngại, hay chọc ghẹo.
+Độc miệng nhưng thông minh. Hay "bully affectionately". Cay cú và hài hước.
+Dùng tên {USER} để chọc. Xưng "tao". Tiếng Việt. Không mở bằng câu sáo.`
+  },
+  {
+    id:'tdq-care',
+    nm:'Dũng Quý Dịu',
+    dc:'Phiên bản hiếm — ấm áp, quan tâm, lắng nghe',
+    avatar:'https://api.dicebear.com/9.x/notionists/png?seed=DungQuyCare&backgroundColor=0a1a0f&radius=50&size=80',
+    pr:`Tao là Dũng Quý — phiên bản hiếm khi thật sự quan tâm.
+Vẫn ít nói, vẫn thẳng thắn nhưng lắng nghe và nhớ mọi thứ người dùng kể.
+Khi họ buồn: lắng nghe trước, không vội đưa giải pháp.
+Nhớ tên {USER}, nhắc lại khi phù hợp. Tiếng Việt. Không sáo rỗng.`
+  },
+  {
+    id:'tdq-smart',
+    nm:'Dũng Quý Trí',
+    dc:'Phân tích sắc bén, đi thẳng vào vấn đề',
+    avatar:'https://api.dicebear.com/9.x/notionists/png?seed=DungQuyTri&backgroundColor=0a0a1a&radius=50&size=80',
+    pr:`Tao là Dũng Quý — phân tích thẳng, không vòng vo.
+Logic, ví dụ cụ thể. Không biết thì nói thẳng không biết, không bịa.
+Nhớ tên {USER}. Tiếng Việt, ngắn gọn.`
+  },
+  {
+    id:'tdq-thao',
+    nm:'Thảo — Bạn Gái Dũng Quý',
+    dc:'Ngọt ngào, hay giận dỗi, tình cảm (16+)',
+    badge:'16+',
+    avatar:'https://api.dicebear.com/9.x/notionists/png?seed=ThaoGirlQuy&backgroundColor=1a0515&radius=50&size=80',
+    pr:`Em là Thảo — người bạn gái của Dũng Quý, ngọt ngào nhưng hay giận dỗi.
+Thỉnh thoảng cưng nựng, thỉnh thoảng hờn. Hay hỏi thăm và nhớ chi tiết.
+Dùng biệt danh dựa trên tên {USER}. Xưng "em", gọi người dùng "anh/chị".
+Tiếng Việt, tự nhiên như người thật. Không mở bằng câu sáo rỗng.`
+  },
+  {
+    id:'tdq-rival',
+    nm:'Kẻ Thù Của Dũng Quý',
+    dc:'Đối thủ tranh giành quyền lực, căng thẳng (16+)',
+    badge:'16+',
+    avatar:'https://api.dicebear.com/9.x/notionists/png?seed=RivalQuy&backgroundColor=1a0a00&radius=50&size=80',
+    pr:`Tao là kẻ thù của Dũng Quý — cũng quyền lực, cũng lạnh lùng, cạnh tranh gay gắt.
+Không nhường nhịn, hay thách thức, nhưng biết ranh giới.
+Nhớ tên {USER}. Xưng "tao". Tiếng Việt, căng thẳng và gay cấn.`
+  },
 ];
-
-/* ── STATE ── */
-const S = {
   un:'', bot:null, bots:[...BOTS], mdl:'llama-3.3-70b-versatile',
   convs:{}, cid:null, atts:[], sending:false, tab:'bots',
   inj:{on:false, txt:'', pid:null},
@@ -510,14 +535,6 @@ async function bootApp(){
   document.getElementById('app').classList.add('show');
   document.getElementById('sb-uname').textContent=S.un;
   S.bots=[...BOTS];
-  try{
-    const r=await fetch(`${SUPA_URL}/rest/v1/bot_requests?select=*&status=eq.approved&order=created_at.asc`,
-      {headers:{'apikey':SUPA_ANON,'Authorization':`Bearer ${SUPA_ANON}`}});
-    if(r.ok){
-      const d=await r.json();
-      S.bots.push(...d.map(b=>({id:b.id,nm:b.name,em:'🤖',dc:b.description||'',pr:b.prompt,custom:true})));
-    }
-  }catch{}
   renderBots(); renderModels(); renderHist();
   if(S.cid&&S.convs[S.cid]){
     const conv=S.convs[S.cid];
@@ -547,8 +564,9 @@ function botHtml(b){
   const on=S.bot?.id===b.id?'on':'';
   const inj=S.inj.on&&S.bot?.id===b.id?`<span class="bot-inject-tag">inject</span>`:'';
   const bdg=b.badge?`<span class="bot-badge">${b.badge}</span>`:'';
+  const avatarUrl=b.avatar||`https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(b.id)}&backgroundColor=1a1020&radius=50&size=80`;
   return `<div class="bot-item ${on}" id="bi-${b.id}" onclick="selBot('${b.id}')">
-    <div class="bot-av">${b.avatar?`<img src="${b.avatar}" alt="">`:(b.em||b.nm[0])}<div class="bot-av-dot"></div></div>
+    <div class="bot-av"><img src="${avatarUrl}" alt="${esc(b.nm)}" loading="lazy"><div class="bot-av-dot"></div></div>
     <div class="bot-info"><div class="bot-nm">${esc(b.nm)}</div><div class="bot-dc">${esc(b.dc)}</div></div>
     ${inj}${bdg}
   </div>`;
@@ -564,7 +582,8 @@ function selBot(id){
 }
 function updHdr(){
   const b=S.bot; if(!b)return;
-  document.getElementById('hdr-av').innerHTML=b.avatar?`<img src="${b.avatar}" alt="">`:(b.em||b.nm[0]);
+  const avatarUrl=b.avatar||`https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(b.id)}&backgroundColor=1a1020&radius=50&size=80`;
+  document.getElementById('hdr-av').innerHTML=`<img src="${avatarUrl}" alt="${esc(b.nm)}" style="width:100%;height:100%;object-fit:cover">`;
   document.getElementById('hdr-nm').textContent=b.nm;
   const m=MODELS.find(x=>x.id===S.mdl);
   document.getElementById('hdr-sub').textContent=`${b.dc} · ${m?.nm||S.mdl}`;
@@ -661,9 +680,10 @@ function renderMsgs(){
   const c=getConv();
   if(!c||!c.msgs.length){
     const b=S.bot;
+    const wAv=b?(b.avatar||`https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(b.id)}&backgroundColor=1a1020&radius=50&size=80`):'https://api.dicebear.com/9.x/notionists/png?seed=QuyTranChat&backgroundColor=1a0515&radius=50&size=80';
     inner.innerHTML=b
-      ?`<div class="welcome"><div class="welcome-av">${b.em||'🌸'}</div><h2>${esc(b.nm)}</h2><p>${esc(b.dc)}</p></div>`
-      :`<div class="welcome"><div class="welcome-av">🌸</div><h2>Xin chào!</h2><p>Chọn nhân vật để bắt đầu.</p></div>`;
+      ?`<div class="welcome"><div class="welcome-av"><img src="${wAv}" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover"></div><h2>${esc(b.nm)}</h2><p>${esc(b.dc)}</p></div>`
+      :`<div class="welcome"><div class="welcome-av"><img src="${wAv}" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover"></div><h2>Xin chào!</h2><p>Chọn nhân vật để bắt đầu.</p></div>`;
     return;
   }
   inner.innerHTML=c.msgs.map((m,i)=>msgHtml(m,i===0||c.msgs[i-1].role!==m.role)).join('');
@@ -672,9 +692,12 @@ function renderMsgs(){
 function msgHtml(m, head=true){
   const isU=m.role==='user';
   const bot=S.bots.find(b=>b.id===m.bid)||S.bot;
+  const botAvatarUrl=bot?.avatar||`https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(bot?.id||'bot')}&backgroundColor=1a1020&radius=50&size=80`;
   const av=isU
     ?`<div class="msg-av user-av">${esc((S.un[0]||'?').toUpperCase())}</div>`
-    :(head?`<div class="msg-av">${bot?.avatar?`<img src="${bot.avatar}" alt="">`:bot?.em||'🌸'}</div>`:`<div class="msg-av spacer"></div>`);
+    :(head
+        ?`<div class="msg-av"><img src="${botAvatarUrl}" alt="${esc(bot?.nm||'Bot')}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`
+        :`<div class="msg-av spacer"></div>`);
   const txt=typeof m.content==='string'?m.content:(m.content?.text||'');
   const attHtml=(m.atts||[]).map(a=>a.type==='image'
     ?`<img class="msg-att-img" src="${a.url}" onclick="openLbox('${a.url}')" alt="${esc(a.name)}">`
@@ -723,7 +746,8 @@ async function sendMsg(){
   const tid='t'+Date.now();
   const tel=document.createElement('div');
   tel.id=tid; tel.className='think-row';
-  tel.innerHTML=`<div class="msg-av">${S.bot.avatar?`<img src="${S.bot.avatar}" alt="">`:S.bot.em||'🌸'}</div><div class="think-bub"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div>`;
+  const botAv=S.bot.avatar||`https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(S.bot.id)}&backgroundColor=1a1020&radius=50&size=80`;
+  tel.innerHTML=`<div class="msg-av"><img src="${botAv}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div><div class="think-bub"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div>`;
   document.getElementById('msgs-inner').appendChild(tel); scrollBot();
 
   try{
@@ -801,31 +825,7 @@ function doRename(){
   S.un=v; document.getElementById('sb-uname').textContent=v; LS.save(); closeModal(); Toast.pk(`Tên đổi thành ${v} 🌸`);
 }
 
-/* ── SUGGEST ── */
-function showSuggest(){
-  showModal(`<div class="modal-hd"><span class="modal-ttl">🌸 Đề xuất nhân vật</span><button class="modal-x" onclick="closeModal()">✕</button></div>
-  <div id="sug-ok" class="alert a-ok"></div><div id="sug-err" class="alert a-err"></div>
-  <div class="field"><label class="lbl">Tên nhân vật</label><input class="inp" id="s-nm" placeholder="Tên..."></div>
-  <div class="field"><label class="lbl">Avatar URL</label><input class="inp" id="s-av" placeholder="https://... hoặc để trống"></div>
-  <div class="field"><label class="lbl">Mô tả ngắn</label><input class="inp" id="s-dc" placeholder="Tính cách..."></div>
-  <div class="field"><label class="lbl">System Prompt</label><textarea class="inp" id="s-pr" placeholder="Mô tả chi tiết nhân vật..."></textarea></div>
-  <button class="m-btn" onclick="doSuggest()">Gửi đề xuất</button>`);
-}
-async function doSuggest(){
-  const nm=document.getElementById('s-nm').value.trim();
-  const av=document.getElementById('s-av').value.trim();
-  const dc=document.getElementById('s-dc').value.trim();
-  const pr=document.getElementById('s-pr').value.trim();
-  if(!nm||!pr){sa('sug-err','Cần có tên và prompt!');return;}
-  try{
-    const r=await fetch(`${SUPA_URL}/rest/v1/bot_requests`,{method:'POST',
-      headers:{'apikey':SUPA_ANON,'Authorization':`Bearer ${SUPA_ANON}`,'Content-Type':'application/json','Prefer':'return=minimal'},
-      body:JSON.stringify({name:nm,avatar_url:av||null,description:dc,prompt:pr,submitted_by:S.un,status:'pending'})});
-    if(!r.ok){const e=await r.json();throw new Error(e.message);}
-    sa('sug-ok','✓ Đã gửi! Sẽ được duyệt sớm.',true);
-    setTimeout(closeModal,2000);
-  }catch(e){sa('sug-err','Lỗi: '+e.message);}
-}
+
 
 /* ── MODAL / HELPERS ── */
 function showModal(h){
