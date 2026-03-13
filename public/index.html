@@ -324,7 +324,7 @@ textarea.inp{resize:vertical;min-height:90px;line-height:1.5}
 <!-- GATE -->
 <div id="gate">
   <div class="gate-card">
-    <div class="gate-av"><img src="https://raw.githubusercontent.com/not2pixel/TeamQuyTran/refs/heads/main/assets/646712202_941726904984406_3062566279037664148_n.jpg?token=GHSAT0AAAAAADRF7O2FVX7GZIEVF7IA3OEE2NUH5BA" alt="logo" style="width:60px;height:60px;border-radius:50%"></div>
+    <div class="gate-av"><img src="https://raw.githubusercontent.com/not2pixel/TeamQuyTran/refs/heads/main/assets/646712202_941726904984406_3062566279037664148_n.jpg" alt="logo" style="width:60px;height:60px;border-radius:50%"></div>
     <div class="gate-title">QuyTran<span>Chat</span></div>
     <div class="gate-sub">Nhập tên để bắt đầu trò chuyện</div>
     <input class="gate-inp" id="name-inp" placeholder="Tên của bạn..." maxlength="30" autocomplete="off" onkeydown="if(event.key==='Enter')enterChat()">
@@ -342,7 +342,7 @@ textarea.inp{resize:vertical;min-height:90px;line-height:1.5}
   <div id="sidebar">
     <div id="sb-head">
       <div class="sb-brand">
-        <div class="sb-brand-icon"><img src="https://raw.githubusercontent.com/not2pixel/TeamQuyTran/refs/heads/main/assets/649828916_1875871163115223_6645676670636474798_n.jpg?token=GHSAT0AAAAAADRF7O2E4ROCKPTASN2MT7TC2NUH6UQ" alt="logo" style="width:24px;height:24px;border-radius:50%"></div>
+        <div class="sb-brand-icon"><img src="https://raw.githubusercontent.com/not2pixel/TeamQuyTran/refs/heads/main/assets/649828916_1875871163115223_6645676670636474798_n.jpg" alt="logo" style="width:24px;height:24px;border-radius:50%"></div>
         <div class="sb-brand-name">QuyTran<em>Chat</em></div>
       </div>
       <div class="sb-chip" id="sb-chip">
@@ -401,7 +401,7 @@ textarea.inp{resize:vertical;min-height:90px;line-height:1.5}
     <div id="msgs-wrap">
       <div id="msgs-inner">
         <div class="welcome" id="welcome">
-          <div class="welcome-av"><img src="https://raw.githubusercontent.com/not2pixel/TeamQuyTran/refs/heads/main/assets/646712202_941726904984406_3062566279037664148_n.jpg?token=GHSAT0AAAAAADRF7O2FVX7GZIEVF7IA3OEE2NUH5BA" alt="" style="width:52px;height:52px;border-radius:50%"></div>
+          <div class="welcome-av"><img src="https://raw.githubusercontent.com/not2pixel/TeamQuyTran/refs/heads/main/assets/646712202_941726904984406_3062566279037664148_n.jpg" alt="" style="width:52px;height:52px;border-radius:50%"></div>
           <h2>Xin chào!</h2>
           <p>Chọn nhân vật bên trái để bắt đầu. Nhân vật sẽ nhớ tên và chat thật tự nhiên.</p>
         </div>
@@ -703,7 +703,7 @@ function renderMsgs(){
   const c=getConv();
   if(!c||!c.msgs.length){
     const b=S.bot;
-    const wAv=b?(b.avatar||`https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(b.id)}&backgroundColor=1a1020&radius=50&size=80`):'https://raw.githubusercontent.com/not2pixel/TeamQuyTran/refs/heads/main/assets/646712202_941726904984406_3062566279037664148_n.jpg?token=GHSAT0AAAAAADRF7O2FVX7GZIEVF7IA3OEE2NUH5BA';
+    const wAv=b?(b.avatar||`https://api.dicebear.com/9.x/notionists/png?seed=${encodeURIComponent(b.id)}&backgroundColor=1a1020&radius=50&size=80`):'https://raw.githubusercontent.com/not2pixel/TeamQuyTran/refs/heads/main/assets/646712202_941726904984406_3062566279037664148_n.jpg';
     inner.innerHTML=b
       ?`<div class="welcome"><div class="welcome-av"><img src="${wAv}" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover"></div><h2>${esc(b.nm)}</h2><p>${esc(b.dc)}</p></div>`
       :`<div class="welcome"><div class="welcome-av"><img src="${wAv}" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover"></div><h2>Xin chào!</h2><p>Chọn nhân vật để bắt đầu.</p></div>`;
