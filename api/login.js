@@ -26,7 +26,8 @@ export default async function handler(req, res) {
       .eq('code', code.toUpperCase().trim())
       .maybeSingle();
 
-    if (e1 || !codeRow) return res.status(401).json({ error: 'Mã không đúng hoặc không tồn tại.' });
+    console.log('[login] code:', code, '| codeRow:', codeRow, '| e1:', e1?.message);
+    if (e1 || !codeRow) return res.status(401).json({ error: `Mã không đúng. Debug: code=${code}, err=${e1?.message}` });
 
     // Lấy profile
     const { data: profile, error: e2 } = await db
