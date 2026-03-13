@@ -1158,7 +1158,8 @@ async function doLogin() {
       showAlert('login-err', msgs[error.message] || error.message);
       return;
     }
-    await db.auth.getSession();
+    // Wait for session to be fully set before querying
+    await new Promise(r => setTimeout(r, 300));
     const { data: pf } = await db.from('profiles').select('is_banned,ban_reason').eq('id', data.user.id).single();
     if (pf?.is_banned) {
       await db.auth.signOut();
