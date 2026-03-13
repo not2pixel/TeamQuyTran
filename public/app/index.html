@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeamQuyTran</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
+<link rel="stylesheet" href="../assets/css/global.css">
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<style>
+/* === APP LAYOUT === */
+body { overflow: hidden; }
+
+#app {
+    display: grid;
+    grid-template-columns: var(--servers-w) var(--sidebar-w) 1fr var(--members-w);
+    grid-template-rows: 100vh;
+    height: 100vh;
+    transition: grid-template-columns 0.2s ease;
+}
+#app.no-members { grid-template-columns: var(--servers-w) var(--sidebar-w) 1fr 0px; }
+
+/* === SERVERS SIDEBAR (left icons) === */
+#servers-bar {
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 4px;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+}
+
+.server-icon {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-xl);
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+    flex-shrink: 0;
+}
+.server-icon:hover, .server-icon.active {
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: #000;
+    box-shadow: var(--shadow-glow);
+}
+.server-icon.active::before {
+    content: '';
+    position: absolute;
+    left: -12px; top: 50%;
+    transform: translateY(-50%);
+    width: 4px; height: 70%;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+}
+.server-notif {
+    position: absolute;
+    bottom: -2px; right: -2px;
+    background: var(--text-danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 16px; height: 16px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-primary);
+    padding: 0 3px;
+}
+.servers-sep { width: 32px; height: 2px; background: var(--border); border-radius: 1px; margin: 4px 0; }
+
+/* === CHANNEL SIDEBAR === */
+#channel-sidebar {
+    background: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.sidebar-header {
+    padding: 0 16px;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 15px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.sidebar-header:hover { background: var(--bg-hover); }
+
+.channel-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+.channel-category {
+    padding: 16px 8px 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+}
+.channel-category:hover { color: var(--text-muted); }
+
+.channel-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px 6px 12px;
+    margin: 1px 8px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition);
+    color: var(--text-muted);
+    font-size: 15px;
+    user-select: none;
+}
+.channel-item:hover { background: var(--bg-hover); color: var(--text-normal); }
+.channel-item.active { background: var(--bg-selected); color: var(--text-normal); }
+.channel-icon { font-size: 16px; flex-shrink: 0; opacity: 0.7; }
+.channel-name { flex: 1; truncate: true; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel-badge { background: var(--text-danger); color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+
+/* User panel at bottom */
+.user-panel {
+    background: var(--bg-primary);
+    padding: 8px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.user-panel-info { flex: 1; overflow: hidden; }
+.user-panel-name { font-size: 14px; font-weight: 600; truncate: true; }
+.user-panel-tag { font-size: 11px; color: var(--text-faint); }
+.user-panel-actions { display: flex; gap: 4px; }
+
+/* === MAIN CHAT AREA === */
+#main-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+}
+
+/* Chat header */
+.chat-header {
+    height: var(--header-h);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+.chat-header-icon { font-size: 18px; color: var(--text-muted); }
+.chat-header-name { font-weight: 700; font-size: 16px; }
+.chat-header-topic { font-size: 13px; color: var(--text-muted); margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-header-actions { margin-left: auto; display: flex; gap: 4px; }
+
+/* Messages */
+#messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.messages-list { display: flex; flex-direction: column; justify-content: flex-end; min-height: 100%; padding: 0 16px; }
+
+/* Date divider */
+.date-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+    color: var(--text-faint);
+    font-size: 12px;
+    font-weight: 600;
+}
+.date-divider::before, .date-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+/* Message */
+.msg-group {
+    display: flex;
+    gap: 12px;
+    padding: 2px 0;
+    border-radius: var(--radius-md);
+    position: relative;
+}
+.msg-group:hover { background: var(--bg-hover); }
+.msg-group:hover .msg-actions { opacity: 1; }
+.msg-group.continued { padding-top: 1px; }
+.msg-group.continued .avatar { visibility: hidden; }
+.msg-group.continued .msg-header { display: none; }
+
+.msg-avatar { flex-shrink: 0; margin-top: 4px; padding: 2px 0; }
+
+.msg-body { flex: 1; min-width: 0; }
+.msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.msg-author { font-weight: 600; font-size: 14px; cursor: pointer; }
+.msg-author:hover { text-decoration: underline; }
+.msg-author.admin { color: var(--role-admin); }
+.msg-author.moderator { color: var(--role-mod); }
+.msg-author.bot { color: var(--accent); }
+.msg-time { font-size: 11px; color: var(--text-faint); }
+.msg-content { font-size: 15px; line-height: 1.6; word-wrap: break-word; color: var(--text-normal); }
+.msg-content.muted { color: var(--text-muted); font-style: italic; font-size: 13px; }
+.msg-edited { font-size: 10px; color: var(--text-faint); margin-left: 4px; }
+
+/* Attachments */
+.msg-attachments { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
+.msg-image { max-width: 400px; max-height: 300px; border-radius: var(--radius-md); object-fit: cover; cursor: pointer; border: 1px solid var(--border); }
+.msg-file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.msg-file:hover { border-color: var(--accent); }
+
+/* Reactions */
+.msg-reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.reaction-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 2px 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+}
+.reaction-pill:hover, .reaction-pill.mine { background: var(--bg-active); border-color: var(--accent); }
+.reaction-count { font-size: 12px; color: var(--text-muted); }
+
+/* Reply preview */
+.reply-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 8px;
+    margin-bottom: 2px;
+    border-left: 2px solid var(--accent);
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.reply-preview:hover { color: var(--text-normal); }
+
+/* Message actions */
+.msg-actions {
+    position: absolute;
+    top: -16px;
+    right: 8px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+    opacity: 0;
+    transition: opacity var(--transition);
+    z-index: 10;
+    box-shadow: var(--shadow-md);
+}
+.action-btn {
+    width: 28px; height: 28px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+}
+.action-btn:hover { background: var(--bg-hover); color: var(--accent); }
+.action-btn.danger:hover { color: var(--text-danger); }
+
+/* Reply bar */
+.reply-bar {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-muted);
+    display: none;
+}
+.reply-bar.show { display: flex; }
+
+/* === INPUT AREA === */
+.input-area {
+    padding: 0 16px 16px;
+    flex-shrink: 0;
+}
+
+.message-input-wrapper {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--transition);
+}
+.message-input-wrapper:focus-within { border-color: var(--accent); }
+
+.attachment-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 12px 0;
+    display: none;
+}
+.attachment-preview.show { display: flex; }
+.att-thumb {
+    position: relative;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    max-width: 200px;
+}
+.att-thumb img { width: 40px; height: 40px; object-fit: cover; border-radius: var(--radius-sm); }
+.att-remove { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: var(--text-danger); border: none; border-radius: 50%; color: #fff; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+.input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 8px 8px 8px 16px;
+}
+
+.msg-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-normal);
+    font-family: inherit;
+    font-size: 15px;
+    resize: none;
+    line-height: 1.5;
+    max-height: 160px;
+    overflow-y: auto;
+}
+.msg-input::placeholder { color: var(--text-faint); }
+
+.input-actions { display: flex; gap: 4px; align-items: flex-end; }
+
+/* === BOT MODE BAR === */
+.bot-mode-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: none;
+}
+.bot-mode-bar.show { display: flex; }
+.bot-mode-btn {
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: inherit;
+}
+.bot-mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+.bot-mode-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* === MEMBERS PANEL === */
+#members-panel {
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px 0;
+}
+
+.members-section-title {
+    padding: 8px 16px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px 6px 12px;
+    margin: 1px 8px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition);
+    color: var(--text-muted);
+}
+.member-item:hover { background: var(--bg-hover); color: var(--text-normal); }
+.member-name { font-size: 14px; font-weight: 500; }
+
+/* === WELCOME SCREEN === */
+.welcome-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 32px;
+    text-align: center;
+    color: var(--text-muted);
+}
+.welcome-icon { font-size: 80px; animation: snakeWiggle 4s ease-in-out infinite; filter: drop-shadow(0 0 20px rgba(34,197,94,0.4)); }
+.welcome-title { font-size: 28px; font-weight: 700; color: var(--text-normal); }
+
+/* === TYPING INDICATOR === */
+.typing-indicator {
+    padding: 0 16px 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    min-height: 20px;
+    font-style: italic;
+}
+
+/* === IMAGE LIGHTBOX === */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9000;
+    cursor: zoom-out;
+    display: none;
+}
+.lightbox.show { display: flex; }
+.lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: var(--radius-md); }
+
+/* === SCROLLED UP INDICATOR === */
+.scroll-to-bottom {
+    position: absolute;
+    bottom: 90px; right: 24px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: var(--radius-full);
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    display: none;
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+    animation: fadeIn 0.2s;
+}
+.scroll-to-bottom.show { display: flex; align-items: center; gap: 6px; }
+
+/* === BOT THINKING === */
+.bot-thinking {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+.dots { display: flex; gap: 4px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: bounce 1.2s infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+/* === STATUS PICKER === */
+.status-menu { position: absolute; bottom: 60px; left: 8px; z-index: 1000; }
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    #app { grid-template-columns: 0 var(--sidebar-w) 1fr 0; }
+    #servers-bar { display: none; }
+    #members-panel { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+    <!-- SERVERS BAR -->
+    <div id="servers-bar">
+        <div class="server-icon active" id="homeBtn" data-tip="Trang chủ" onclick="switchView('home')">🐍</div>
+        <div class="servers-sep"></div>
+        <div id="serverList"></div>
+        <div class="server-icon" data-tip="Tạo server" onclick="showCreateServer()" style="font-size:24px">+</div>
+    </div>
+
+    <!-- CHANNEL SIDEBAR -->
+    <div id="channel-sidebar">
+        <div class="sidebar-header" id="sidebarHeader">
+            <span id="sidebarTitle">TeamQuyTran</span>
+            <span id="sidebarMenu" onclick="showServerSettings(event)">⚙</span>
+        </div>
+        <div class="channel-list" id="channelList">
+            <!-- Dynamic content -->
+        </div>
+        <div class="user-panel">
+            <div class="avatar avatar-32" id="selfAvatar">?</div>
+            <div class="user-panel-info">
+                <div class="user-panel-name" id="selfName">...</div>
+                <div class="user-panel-tag" id="selfStatus">● online</div>
+            </div>
+            <div class="user-panel-actions">
+                <button class="btn-icon btn" onclick="showStatusMenu(event)" data-tip="Đổi trạng thái">🟢</button>
+                <button class="btn-icon btn" onclick="showSettings()" data-tip="Cài đặt">⚙</button>
+                <button class="btn-icon btn" onclick="Auth.signOut()" data-tip="Đăng xuất">🚪</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div id="main-area">
+        <!-- Welcome / Empty state -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-icon">🐍</div>
+            <h2 class="welcome-title">TeamQuyTran</h2>
+            <p>Hãy sống như một con rắn.</p>
+            <p class="text-sm">Chọn một kênh hoặc DM để bắt đầu trò chuyện</p>
+        </div>
+
+        <!-- Chat view (hidden initially) -->
+        <div id="chatView" style="display:none; flex:1; display:none; flex-direction:column; overflow:hidden">
+            <div class="chat-header">
+                <span class="chat-header-icon" id="chatIcon">#</span>
+                <span class="chat-header-name" id="chatName">channel</span>
+                <span class="chat-header-topic" id="chatTopic"></span>
+                <div class="chat-header-actions">
+                    <button class="btn-icon btn" onclick="toggleMembers()" data-tip="Danh sách thành viên">👥</button>
+                    <button class="btn-icon btn" onclick="showPinnedMessages()" data-tip="Tin nhắn ghim">📌</button>
+                    <button class="btn-icon btn" onclick="showSearch()" data-tip="Tìm kiếm">🔍</button>
+                </div>
+            </div>
+
+            <div style="position:relative; flex:1; display:flex; flex-direction:column; overflow:hidden">
+                <div id="messages-container">
+                    <div class="messages-list" id="messagesList"></div>
+                </div>
+                <div class="scroll-to-bottom" id="scrollToBottom" onclick="scrollToBottom()">
+                    ↓ Tin mới
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator"></div>
+
+            <div class="input-area">
+                <div class="reply-bar" id="replyBar">
+                    <span id="replyText">Đang trả lời <strong></strong></span>
+                    <button class="btn-icon btn" onclick="cancelReply()" style="width:24px;height:24px;font-size:12px">✕</button>
+                </div>
+                <div class="message-input-wrapper">
+                    <div class="attachment-preview" id="attachmentPreview"></div>
+                    <div class="input-row">
+                        <button class="btn-icon btn" onclick="triggerFileUpload()" data-tip="Đính kèm file">📎</button>
+                        <textarea class="msg-input" id="msgInput" placeholder="Nhắn tin..." rows="1"
+                            onkeydown="handleInputKeydown(event)"
+                            oninput="handleInputResize(this); sendTyping()"></textarea>
+                        <div class="input-actions">
+                            <button class="btn-icon btn" onclick="showEmojiPicker()" data-tip="Emoji">😊</button>
+                            <button class="btn-icon btn" onclick="sendMessage()" data-tip="Gửi" style="color:var(--accent)">➤</button>
+                        </div>
+                    </div>
+                    <div class="bot-mode-bar" id="botModeBar">
+                        <span>🐍 QuýBot chế độ:</span>
+                        <button class="bot-mode-btn active" onclick="setBotMode('cold', this)">❄ Lạnh lùng</button>
+                        <button class="bot-mode-btn" onclick="setBotMode('romantic', this)">🌹 Lãng mạn</button>
+                        <button class="bot-mode-btn" onclick="setBotMode('evil', this)">😈 Ác độc</button>
+                        <button class="bot-mode-btn" onclick="setBotMode('adult', this)">🔥 16+</button>
+                        <button class="btn-icon btn" onclick="QuýBot.clearHistory(); Toast.info('Đã xóa lịch sử QuýBot')" style="font-size:12px;margin-left:auto" data-tip="Xóa lịch sử">🗑</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MEMBERS PANEL -->
+    <div id="members-panel">
+        <div class="members-section-title">Thành viên</div>
+        <div id="membersList"></div>
+    </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="fileInput" style="display:none" accept=".txt,.png,.jpg,.jpeg,.pdf" onchange="handleFileSelect(event)">
+
+<!-- MODALS container -->
+<div id="modals"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="../assets/js/core.js"></script>
+<script src="../assets/js/bot.js"></script>
+<script>
+// ============================================================
+// GLOBAL APP STATE
+// ============================================================
+const AppState = {
+    user: null,
+    profile: null,
+    currentServer: null,
+    currentChannel: null,
+    servers: [],
+    channels: [],
+    members: [],
+    pendingAttachments: [],
+    replyTo: null,
+    isBotChannel: false,
+    realtimeSubs: [],
+    typingTimeout: null,
+    typingUsers: {},
+    membersVisible: true,
+};
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = '/LogIn/'; return; }
+
+    AppState.user = session.user;
+    AppState.profile = await Auth.getProfile(session.user.id);
+
+    if (!AppState.profile) { await Auth.signOut(); return; }
+
+    // Update UI
+    updateSelfPanel();
+
+    // Load DMs and servers
+    await loadServers();
+    await loadDMs();
+
+    // Subscribe to realtime
+    subscribeGlobal();
+
+    // Set online
+    await supabase.from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+
+    // Handle page unload
+    window.addEventListener('beforeunload', () => {
+        supabase.from('profiles').update({ status: 'offline', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+    });
+});
+
+// ============================================================
+// SELF PANEL
+// ============================================================
+function updateSelfPanel() {
+    const p = AppState.profile;
+    const name = p.display_name || p.username;
+    document.getElementById('selfName').textContent = name;
+    document.getElementById('selfStatus').textContent = `● ${p.status || 'online'}`;
+
+    const avatar = document.getElementById('selfAvatar');
+    if (p.avatar_url) {
+        avatar.innerHTML = `<img src="${p.avatar_url}" alt="">`;
+    } else {
+        avatar.textContent = name[0].toUpperCase();
+    }
+}
+
+// ============================================================
+// SERVERS
+// ============================================================
+async function loadServers() {
+    const { data: memberships } = await supabase
+        .from('server_members')
+        .select('server_id, servers(*)')
+        .eq('user_id', AppState.user.id);
+
+    AppState.servers = memberships?.map(m => m.servers) || [];
+    renderServerList();
+}
+
+function renderServerList() {
+    const list = document.getElementById('serverList');
+    list.innerHTML = AppState.servers.map(s => `
+        <div class="server-icon" data-id="${s.id}" onclick="selectServer('${s.id}')" data-tip="${s.name}">
+            ${s.icon_url ? `<img src="${s.icon_url}" style="width:48px;height:48px;border-radius:inherit;object-fit:cover">` : s.name[0].toUpperCase()}
+        </div>
+    `).join('');
+}
+
+async function selectServer(serverId) {
+    const server = AppState.servers.find(s => s.id === serverId);
+    if (!server) return;
+
+    AppState.currentServer = server;
+    AppState.isBotChannel = false;
+
+    document.getElementById('sidebarTitle').textContent = server.name;
+    document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
+    document.querySelector(`[data-id="${serverId}"]`)?.classList.add('active');
+
+    await loadChannels(serverId);
+    await loadMembers(serverId);
+    renderDMChannels([]); // clear DMs from sidebar
+}
+
+async function loadChannels(serverId) {
+    const { data } = await supabase
+        .from('channels')
+        .select('*')
+        .eq('server_id', serverId)
+        .order('position');
+
+    AppState.channels = data || [];
+    renderChannels();
+}
+
+function renderChannels() {
+    const list = document.getElementById('channelList');
+    const textChannels = AppState.channels.filter(c => c.type === 'text');
+    const announcements = AppState.channels.filter(c => c.type === 'announcement');
+
+    let html = '';
+
+    if (announcements.length) {
+        html += `<div class="channel-category">📢 Thông báo <span>+</span></div>`;
+        html += announcements.map(c => channelItem(c)).join('');
+    }
+
+    html += `<div class="channel-category">💬 Kênh văn bản <span onclick="showCreateChannel(event)">+</span></div>`;
+    html += textChannels.map(c => channelItem(c)).join('');
+
+    // Bot channel
+    html += `<div class="channel-category">🤖 Bot</div>`;
+    html += `<div class="channel-item" onclick="openBotChannel()"><span class="channel-icon">🐍</span><span class="channel-name">quýbot</span></div>`;
+
+    list.innerHTML = html;
+}
+
+function channelItem(c) {
+    const icons = { text: '#', announcement: '📢', voice: '🔊' };
+    return `
+        <div class="channel-item" id="ch_${c.id}" onclick="selectChannel('${c.id}')">
+            <span class="channel-icon">${icons[c.type] || '#'}</span>
+            <span class="channel-name">${c.name}</span>
+        </div>
+    `;
+}
+
+async function selectChannel(channelId) {
+    const channel = AppState.channels.find(c => c.id === channelId);
+    if (!channel) return;
+
+    AppState.currentChannel = channel;
+    AppState.isBotChannel = false;
+
+    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+    document.getElementById(`ch_${channelId}`)?.classList.add('active');
+
+    document.getElementById('chatIcon').textContent = '#';
+    document.getElementById('chatName').textContent = channel.name;
+    document.getElementById('chatTopic').textContent = channel.topic || '';
+    document.getElementById('botModeBar').classList.remove('show');
+
+    showChatView();
+    await loadMessages(channelId);
+    subscribeChannel(channelId);
+}
+
+// ============================================================
+// DMs
+// ============================================================
+async function loadDMs() {
+    const { data } = await supabase
+        .from('dm_participants')
+        .select('channel_id, channels!inner(*), profiles!dm_participants_user_id_fkey(*)')
+        .eq('user_id', AppState.user.id)
+        .eq('channels.is_dm', true);
+
+    // Get other participants
+    const dms = [];
+    if (data) {
+        for (const dm of data) {
+            const { data: participants } = await supabase
+                .from('dm_participants')
+                .select('profiles(*)')
+                .eq('channel_id', dm.channel_id)
+                .neq('user_id', AppState.user.id);
+
+            if (participants?.length) {
+                dms.push({ channel: dm.channels, other: participants[0].profiles });
+            }
+        }
+    }
+
+    renderDMChannels(dms);
+}
+
+function renderDMChannels(dms) {
+    const list = document.getElementById('channelList');
+    const dmHtml = dms.map(dm => {
+        const name = dm.other?.display_name || dm.other?.username || 'Unknown';
+        return `
+            <div class="channel-item" onclick="selectDM('${dm.channel.id}', '${name}', '${dm.other?.status || 'offline'}')">
+                <div class="avatar avatar-32" style="margin-right:0">
+                    ${dm.other?.avatar_url ? `<img src="${dm.other.avatar_url}">` : name[0]}
+                    <span class="status-dot ${dm.other?.status || 'offline'}"></span>
+                </div>
+                <span class="channel-name">${name}</span>
+            </div>
+        `;
+    }).join('');
+
+    list.innerHTML = `
+        <div class="channel-category">💌 Tin nhắn trực tiếp</div>
+        ${dmHtml}
+        <div class="channel-item" onclick="showNewDM()" style="color:var(--accent)">
+            <span class="channel-icon">+</span>
+            <span class="channel-name">Nhắn tin mới</span>
+        </div>
+    `;
+}
+
+function switchView(view) {
+    if (view === 'home') {
+        AppState.currentServer = null;
+        document.getElementById('sidebarTitle').textContent = 'TeamQuyTran';
+        document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
+        document.getElementById('homeBtn').classList.add('active');
+        loadDMs();
+        document.getElementById('membersList').innerHTML = '';
+    }
+}
+
+// ============================================================
+// BOT CHANNEL
+// ============================================================
+function openBotChannel() {
+    AppState.isBotChannel = true;
+    AppState.currentChannel = { id: 'bot', name: 'quýbot' };
+
+    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
+
+    document.getElementById('chatIcon').textContent = '🐍';
+    document.getElementById('chatName').textContent = 'QuýBot';
+    document.getElementById('chatTopic').textContent = 'Chat với QuýBot 🤖 — Hỗ trợ ảnh, txt, pdf';
+    document.getElementById('botModeBar').classList.add('show');
+    document.getElementById('msgInput').placeholder = 'Hỏi QuýBot gì đó...';
+
+    showChatView();
+
+    // Load bot history from localStorage
+    const history = LocalCache.getMessages('bot');
+    renderMessages(history, false);
+}
+
+function setBotMode(mode, btn) {
+    QuýBot.setMode(mode);
+    document.querySelectorAll('.bot-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    Toast.info(`QuýBot: Chế độ ${btn.textContent.trim()}`);
+}
+
+// ============================================================
+// MEMBERS
+// ============================================================
+async function loadMembers(serverId) {
+    const { data } = await supabase
+        .from('server_members')
+        .select('*, profiles(*)')
+        .eq('server_id', serverId);
+
+    AppState.members = data || [];
+    renderMembers();
+}
+
+function renderMembers() {
+    const online = AppState.members.filter(m => m.profiles?.status !== 'offline');
+    const offline = AppState.members.filter(m => m.profiles?.status === 'offline');
+
+    const memberHtml = (members, title) => {
+        if (!members.length) return '';
+        return `
+            <div class="members-section-title">${title} — ${members.length}</div>
+            ${members.map(m => {
+                const p = m.profiles;
+                const name = p?.display_name || p?.username || 'Unknown';
+                return `
+                    <div class="member-item" onclick="showUserProfile('${p?.id}')">
+                        <div class="avatar avatar-32">
+                            ${p?.avatar_url ? `<img src="${p.avatar_url}">` : name[0]}
+                            <span class="status-dot ${p?.status || 'offline'}"></span>
+                        </div>
+                        <div>
+                            <div class="member-name">${name}</div>
+                            ${m.role !== 'user' ? `<div class="text-xs"><span class="badge badge-${m.role}">${m.role}</span></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        `;
+    };
+
+    document.getElementById('membersList').innerHTML =
+        memberHtml(online, '🟢 Online') +
+        memberHtml(offline, '⚪ Offline');
+}
+
+function toggleMembers() {
+    AppState.membersVisible = !AppState.membersVisible;
+    document.getElementById('app').classList.toggle('no-members', !AppState.membersVisible);
+}
+
+// ============================================================
+// MESSAGES
+// ============================================================
+async function loadMessages(channelId) {
+    // First load from local cache for instant display
+    const cached = LocalCache.getMessages(channelId);
+    if (cached.length) renderMessages(cached, false);
+
+    // Then fetch from Supabase
+    const { data } = await supabase
+        .from('messages')
+        .select('*, profiles(*), reply:reply_to(id, content, profiles(username))')
+        .eq('channel_id', channelId)
+        .order('created_at', { ascending: true })
+        .limit(50);
+
+    if (data) {
+        LocalCache.setMessages(channelId, data);
+        renderMessages(data, true);
+        scrollToBottom();
+    }
+}
+
+function renderMessages(messages, scroll = true) {
+    const list = document.getElementById('messagesList');
+    if (!messages.length) {
+        list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-faint)">
+            Chưa có tin nhắn nào. Hãy bắt đầu! 🐍
+        </div>`;
+        return;
+    }
+
+    let html = '';
+    let lastAuthorId = null;
+    let lastDate = null;
+
+    messages.forEach((msg, i) => {
+        const msgDate = new Date(msg.created_at).toDateString();
+        if (msgDate !== lastDate) {
+            html += `<div class="date-divider">${new Date(msg.created_at).toLocaleDateString('vi-VN', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}</div>`;
+            lastDate = msgDate;
+            lastAuthorId = null;
+        }
+
+        const timeDiff = i > 0 ? (new Date(msg.created_at) - new Date(messages[i-1].created_at)) / 1000 : 999;
+        const continued = msg.author_id === lastAuthorId && timeDiff < 300 && !msg.reply_to;
+
+        html += renderMessage(msg, continued);
+        lastAuthorId = msg.author_id;
+    });
+
+    list.innerHTML = html;
+
+    // Attach spoiler handlers
+    list.querySelectorAll('.spoiler').forEach(el => {
+        el.addEventListener('click', () => el.classList.toggle('revealed'));
+    });
+
+    if (scroll) scrollToBottom();
+}
+
+function renderMessage(msg, continued = false) {
+    const p = msg.profiles || {};
+    const name = p.display_name || p.username || (msg.is_bot ? '🐍 QuýBot' : 'Unknown');
+    const role = msg.is_bot ? 'bot' : (p.role || 'user');
+    const avatarContent = p.avatar_url ? `<img src="${p.avatar_url}" alt="">` : name[0].toUpperCase();
+
+    const replyHtml = msg.reply ? `
+        <div class="reply-preview" onclick="scrollToMessage('${msg.reply.id}')">
+            <span>↩</span>
+            <strong>${msg.reply.profiles?.username || 'Unknown'}:</strong>
+            <span>${(msg.reply.content || '').slice(0, 60)}${msg.reply.content?.length > 60 ? '...' : ''}</span>
+        </div>
+    ` : '';
+
+    const attachmentsHtml = (msg.attachments || []).map(att => {
+        if (att.type === 'image') {
+            return `<img class="msg-image" src="${att.url}" alt="${att.name}" onclick="openLightbox('${att.url}')">`;
+        }
+        return `<div class="msg-file" onclick="window.open('${att.url}')">
+            📄 <span>${att.name}</span>
+        </div>`;
+    }).join('');
+
+    const isSelf = msg.author_id === AppState.user?.id;
+
+    return `
+        <div class="msg-group ${continued ? 'continued' : ''}" id="msg_${msg.id}" data-id="${msg.id}">
+            <div class="msg-avatar">
+                <div class="avatar avatar-40" onclick="showUserProfile('${p.id}')">${avatarContent}</div>
+            </div>
+            <div class="msg-body">
+                ${replyHtml}
+                <div class="msg-header">
+                    <span class="msg-author ${role}" onclick="showUserProfile('${p.id}')">${name}</span>
+                    ${role !== 'user' ? `<span class="badge badge-${role === 'bot' ? 'bot' : role}">${role === 'bot' ? 'BOT' : role.toUpperCase()}</span>` : ''}
+                    <span class="msg-time">${TimeUtil.format(msg.created_at)}</span>
+                    ${msg.edited ? `<span class="msg-edited">(đã chỉnh sửa)</span>` : ''}
+                </div>
+                <div class="msg-content ${msg.type === 'system' ? 'muted' : ''}">${MD.render(msg.content || '')}</div>
+                ${attachmentsHtml ? `<div class="msg-attachments">${attachmentsHtml}</div>` : ''}
+                ${renderReactions(msg)}
+            </div>
+            <div class="msg-actions">
+                <button class="action-btn" onclick="addReaction('${msg.id}')" data-tip="React">😊</button>
+                <button class="action-btn" onclick="replyTo('${msg.id}', '${name}')" data-tip="Trả lời">↩</button>
+                ${isSelf ? `<button class="action-btn" onclick="editMessage('${msg.id}')" data-tip="Chỉnh sửa">✏</button>` : ''}
+                ${(isSelf || ['admin','moderator'].includes(AppState.profile?.role)) ? `<button class="action-btn danger" onclick="deleteMessage('${msg.id}')" data-tip="Xóa">🗑</button>` : ''}
+                <button class="action-btn" onclick="pinMessage('${msg.id}')" data-tip="Ghim">📌</button>
+            </div>
+        </div>
+    `;
+}
+
+function renderReactions(msg) {
+    if (!msg.reactions_summary) return '';
+    // Simplified - would come from aggregated query
+    return '';
+}
+
+function appendMessage(msg) {
+    const list = document.getElementById('messagesList');
+    const temp = document.createElement('div');
+    temp.innerHTML = renderMessage(msg, false);
+    const el = temp.firstElementChild;
+    list.appendChild(el);
+
+    // Spoiler handlers for new message
+    el.querySelectorAll('.spoiler').forEach(s => s.addEventListener('click', () => s.classList.toggle('revealed')));
+
+    const container = document.getElementById('messages-container');
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    if (atBottom) scrollToBottom();
+    else {
+        document.getElementById('scrollToBottom').classList.add('show');
+    }
+
+    // Cache locally
+    if (AppState.currentChannel?.id) {
+        LocalCache.appendMessage(AppState.currentChannel.id, msg);
+    }
+}
+
+// ============================================================
+// SEND MESSAGE
+// ============================================================
+async function sendMessage() {
+    if (AppState.isBotChannel) { await sendBotMessage(); return; }
+    if (!AppState.currentChannel) return;
+
+    const input = document.getElementById('msgInput');
+    const content = input.value.trim();
+    const attachments = [...AppState.pendingAttachments];
+
+    if (!content && !attachments.length) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    clearAttachments();
+
+    const msgData = {
+        channel_id: AppState.currentChannel.id,
+        author_id: AppState.user.id,
+        content: content || null,
+        type: 'text',
+        attachments: attachments,
+        reply_to: AppState.replyTo?.id || null,
+    };
+
+    cancelReply();
+
+    // Optimistic UI
+    const optimistic = {
+        ...msgData,
+        id: `opt_${Date.now()}`,
+        created_at: new Date().toISOString(),
+        profiles: AppState.profile,
+    };
+    appendMessage(optimistic);
+
+    // Send to Supabase
+    const { data, error } = await supabase.from('messages').insert(msgData).select('*, profiles(*)').single();
+    if (error) {
+        Toast.error('Gửi tin nhắn thất bại.');
+        document.getElementById(`msg_opt_${Date.now()}`)?.remove();
+    }
+}
+
+async function sendBotMessage() {
+    const input = document.getElementById('msgInput');
+    const content = input.value.trim();
+    const attachments = [...AppState.pendingAttachments];
+
+    if (!content && !attachments.length) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    clearAttachments();
+
+    // Show user message
+    const userMsg = {
+        id: `usr_${Date.now()}`,
+        content,
+        created_at: new Date().toISOString(),
+        profiles: AppState.profile,
+        is_bot: false,
+        attachments,
+    };
+    appendMessage(userMsg);
+    LocalCache.appendMessage('bot', userMsg);
+
+    // Show thinking
+    const thinkId = `think_${Date.now()}`;
+    const list = document.getElementById('messagesList');
+    list.insertAdjacentHTML('beforeend', `
+        <div id="${thinkId}" class="bot-thinking">
+            <div class="avatar avatar-40">🐍</div>
+            <div><div class="msg-author bot">QuýBot</div>
+            <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
+        </div>
+    `);
+    scrollToBottom();
+
+    try {
+        // Process attachments for bot
+        const processedAtts = [];
+        for (const att of attachments) {
+            if (att.rawFile) {
+                const processed = await QuýBot.processFile(att.rawFile);
+                processedAtts.push(processed);
+            }
+        }
+
+        const reply = await QuýBot.sendMessage(content, processedAtts);
+
+        document.getElementById(thinkId)?.remove();
+
+        const botMsg = {
+            id: `bot_${Date.now()}`,
+            content: reply,
+            created_at: new Date().toISOString(),
+            profiles: { display_name: 'QuýBot', username: 'quybot', role: 'bot' },
+            is_bot: true,
+        };
+        appendMessage(botMsg);
+        LocalCache.appendMessage('bot', botMsg);
+
+    } catch (e) {
+        document.getElementById(thinkId)?.remove();
+        const errMsg = {
+            id: `err_${Date.now()}`,
+            content: '🐍 QuýBot không phản hồi được. Kiểm tra GROQ API key.',
+            created_at: new Date().toISOString(),
+            profiles: { display_name: 'QuýBot', username: 'quybot', role: 'bot' },
+            is_bot: true,
+        };
+        appendMessage(errMsg);
+    }
+}
+
+// ============================================================
+// INPUT HELPERS
+// ============================================================
+function handleInputKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+}
+
+function handleInputResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
+}
+
+let typingTimer;
+async function sendTyping() {
+    if (!AppState.currentChannel || AppState.isBotChannel) return;
+    clearTimeout(typingTimer);
+    // Use Supabase presence or broadcast
+    const channel = supabase.channel(`typing_${AppState.currentChannel.id}`);
+    await channel.send({ type: 'broadcast', event: 'typing', payload: { userId: AppState.user.id, username: AppState.profile.username } });
+    typingTimer = setTimeout(() => {}, 2000);
+}
+
+function replyTo(msgId, authorName) {
+    AppState.replyTo = { id: msgId, name: authorName };
+    const bar = document.getElementById('replyBar');
+    bar.classList.add('show');
+    bar.querySelector('strong').textContent = authorName;
+    document.getElementById('msgInput').focus();
+}
+
+function cancelReply() {
+    AppState.replyTo = null;
+    document.getElementById('replyBar').classList.remove('show');
+}
+
+// ============================================================
+// FILE ATTACHMENTS
+// ============================================================
+function triggerFileUpload() {
+    document.getElementById('fileInput').click();
+}
+
+async function handleFileSelect(e) {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+        if (file.size > TQT.MAX_FILE_SIZE) { Toast.error(`${file.name} quá lớn (max 8MB)`); continue; }
+        if (!TQT.ALLOWED_FILE_TYPES.includes(file.type)) { Toast.error(`${file.name}: loại file không hỗ trợ`); continue; }
+
+        const att = { name: file.name, type: file.type.startsWith('image/') ? 'image' : 'file', rawFile: file };
+
+        if (att.type === 'image') {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                att.preview = ev.target.result;
+                try {
+                    att.url = await GitHubUploader.upload(file);
+                } catch(err) {
+                    att.url = ev.target.result; // fallback to data URL
+                }
+                addAttachmentPreview(att);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            att.url = URL.createObjectURL(file);
+            addAttachmentPreview(att);
+        }
+
+        AppState.pendingAttachments.push(att);
+    }
+    e.target.value = '';
+}
+
+function addAttachmentPreview(att) {
+    const preview = document.getElementById('attachmentPreview');
+    preview.classList.add('show');
+
+    const idx = AppState.pendingAttachments.indexOf(att);
+    const thumb = document.createElement('div');
+    thumb.className = 'att-thumb';
+    thumb.id = `att_${idx}`;
+    thumb.innerHTML = att.type === 'image'
+        ? `<img src="${att.preview || att.url}"><span class="truncate" style="max-width:120px">${att.name}</span><button class="att-remove" onclick="removeAttachment(${idx})">✕</button>`
+        : `📄 <span class="truncate">${att.name}</span><button class="att-remove" onclick="removeAttachment(${idx})">✕</button>`;
+
+    preview.appendChild(thumb);
+}
+
+function removeAttachment(idx) {
+    AppState.pendingAttachments.splice(idx, 1);
+    document.getElementById(`att_${idx}`)?.remove();
+    if (!AppState.pendingAttachments.length) {
+        document.getElementById('attachmentPreview').classList.remove('show');
+    }
+}
+
+function clearAttachments() {
+    AppState.pendingAttachments = [];
+    const preview = document.getElementById('attachmentPreview');
+    preview.innerHTML = '';
+    preview.classList.remove('show');
+}
+
+// ============================================================
+// MESSAGE ACTIONS
+// ============================================================
+async function deleteMessage(msgId) {
+    if (!confirm('Xóa tin nhắn này?')) return;
+    const { error } = await supabase.from('messages').delete().eq('id', msgId);
+    if (!error) {
+        document.getElementById(`msg_${msgId}`)?.remove();
+    }
+}
+
+async function editMessage(msgId) {
+    const el = document.getElementById(`msg_${msgId}`);
+    if (!el) return;
+    const content = el.querySelector('.msg-content');
+    const current = content.getAttribute('data-raw') || content.textContent;
+
+    const newContent = prompt('Chỉnh sửa tin nhắn:', current);
+    if (!newContent || newContent === current) return;
+
+    const { error } = await supabase.from('messages')
+        .update({ content: newContent, edited: true, edited_at: new Date().toISOString() })
+        .eq('id', msgId);
+
+    if (!error) {
+        content.innerHTML = MD.render(newContent);
+    }
+}
+
+async function pinMessage(msgId) {
+    const { error } = await supabase.from('messages').update({ pinned: true }).eq('id', msgId);
+    if (!error) Toast.success('Đã ghim tin nhắn 📌');
+}
+
+function addReaction(msgId) {
+    const emojis = ['👍','❤️','🐍','😂','😮','😢','🔥','💯'];
+    const picker = document.createElement('div');
+    picker.className = 'ctx-menu';
+    picker.style.cssText = `bottom:40px;left:50%`;
+    picker.innerHTML = `<div style="display:flex;gap:4px;padding:4px">${emojis.map(e => `<span style="font-size:20px;cursor:pointer;padding:4px;border-radius:4px" onclick="doReaction('${msgId}','${e}')">${e}</span>`).join('')}</div>`;
+    document.body.appendChild(picker);
+    setTimeout(() => document.addEventListener('click', () => picker.remove(), { once: true }), 0);
+}
+
+async function doReaction(msgId, emoji) {
+    await supabase.from('reactions').upsert({ message_id: msgId, user_id: AppState.user.id, emoji });
+}
+
+// ============================================================
+// REALTIME
+// ============================================================
+function subscribeChannel(channelId) {
+    // Unsubscribe previous
+    AppState.realtimeSubs.forEach(s => s.unsubscribe());
+    AppState.realtimeSubs = [];
+
+    const sub = supabase.channel(`msgs_${channelId}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `channel_id=eq.${channelId}`
+        }, async (payload) => {
+            // Fetch with profile
+            const { data } = await supabase
+                .from('messages')
+                .select('*, profiles(*)')
+                .eq('id', payload.new.id)
+                .single();
+
+            if (data && data.author_id !== AppState.user.id) {
+                appendMessage(data);
+            }
+        })
+        .on('postgres_changes', {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'messages',
+            filter: `channel_id=eq.${channelId}`
+        }, (payload) => {
+            document.getElementById(`msg_${payload.old.id}`)?.remove();
+        })
+        .subscribe();
+
+    AppState.realtimeSubs.push(sub);
+}
+
+function subscribeGlobal() {
+    // Profile status updates
+    supabase.channel('presence')
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles'
+        }, (payload) => {
+            // Update member list if in a server
+            const member = AppState.members.find(m => m.user_id === payload.new.id);
+            if (member) {
+                member.profiles = { ...member.profiles, ...payload.new };
+                renderMembers();
+            }
+        })
+        .subscribe();
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showChatView() {
+    document.getElementById('welcomeScreen').style.display = 'none';
+    const cv = document.getElementById('chatView');
+    cv.style.display = 'flex';
+}
+
+function scrollToBottom() {
+    const c = document.getElementById('messages-container');
+    c.scrollTop = c.scrollHeight;
+    document.getElementById('scrollToBottom').classList.remove('show');
+}
+
+function scrollToMessage(msgId) {
+    document.getElementById(`msg_${msgId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function openLightbox(url) {
+    document.getElementById('lightboxImg').src = url;
+    document.getElementById('lightbox').classList.add('show');
+}
+
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('show');
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function showCreateServer() {
+    showModal(`
+        <div class="modal-header">
+            <h3 class="modal-title">Tạo Server mới</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="input-group">
+            <label class="input-label">Tên Server</label>
+            <input type="text" class="input" id="newServerName" placeholder="Server của tôi">
+        </div>
+        <div class="input-group">
+            <label class="input-label">Mô tả</label>
+            <input type="text" class="input" id="newServerDesc" placeholder="Mô tả ngắn...">
+        </div>
+        <button class="btn btn-primary w-full" onclick="createServer()">🐍 Tạo Server</button>
+    `);
+}
+
+async function createServer() {
+    const name = document.getElementById('newServerName').value.trim();
+    if (!name) { Toast.error('Nhập tên server'); return; }
+
+    const { data: server, error } = await supabase.from('servers').insert({
+        name,
+        description: document.getElementById('newServerDesc').value.trim(),
+        owner_id: AppState.user.id
+    }).select().single();
+
+    if (error) { Toast.error('Không tạo được server'); return; }
+
+    // Add owner as admin member
+    await supabase.from('server_members').insert({ server_id: server.id, user_id: AppState.user.id, role: 'admin' });
+
+    // Create default channels
+    await supabase.from('channels').insert([
+        { server_id: server.id, name: 'general', type: 'text', position: 0 },
+        { server_id: server.id, name: 'thông-báo', type: 'announcement', position: 1 },
+    ]);
+
+    closeModal();
+    await loadServers();
+    Toast.success(`Server "${name}" đã được tạo!`);
+}
+
+function showUserProfile(userId) {
+    if (!userId || userId === 'undefined') return;
+    const member = AppState.members.find(m => m.user_id === userId);
+    const profile = member?.profiles || (userId === AppState.user?.id ? AppState.profile : null);
+    if (!profile) return;
+
+    const name = profile.display_name || profile.username;
+    showModal(`
+        <div style="text-align:center;padding:16px 0">
+            <div class="avatar avatar-80" style="margin:0 auto 16px">
+                ${profile.avatar_url ? `<img src="${profile.avatar_url}">` : name[0].toUpperCase()}
+            </div>
+            <h3>${name}</h3>
+            <div class="text-muted text-sm">@${profile.username}</div>
+            ${profile.bio ? `<p style="margin-top:12px;font-size:14px;color:var(--text-muted)">${profile.bio}</p>` : ''}
+            <div style="margin-top:8px">
+                <span class="badge badge-${profile.role || 'user'}">${profile.role || 'user'}</span>
+            </div>
+        </div>
+        ${userId !== AppState.user?.id ? `
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:16px">
+            <button class="btn btn-primary btn-sm" onclick="startDM('${userId}'); closeModal()">💌 Nhắn tin</button>
+            <button class="btn btn-ghost btn-sm" onclick="sendFriendRequest('${userId}'); closeModal()">➕ Kết bạn</button>
+        </div>
+        ` : ''}
+    `);
+}
+
+async function showNewDM() {
+    showModal(`
+        <div class="modal-header">
+            <h3 class="modal-title">Nhắn tin mới</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="input-group">
+            <label class="input-label">Username</label>
+            <input type="text" class="input" id="dmUsername" placeholder="tenban123" oninput="searchUsers(this.value)">
+        </div>
+        <div id="userSearchResults"></div>
+    `);
+}
+
+async function searchUsers(query) {
+    if (!query || query.length < 2) return;
+    const { data } = await supabase.from('profiles').select('*').ilike('username', `%${query}%`).neq('id', AppState.user.id).limit(5);
+    const res = document.getElementById('userSearchResults');
+    if (!data?.length) { res.innerHTML = '<div class="text-muted text-sm">Không tìm thấy</div>'; return; }
+
+    res.innerHTML = data.map(p => `
+        <div class="member-item" onclick="startDM('${p.id}'); closeModal()" style="border-radius:8px">
+            <div class="avatar avatar-32">${p.display_name?.[0] || p.username[0]}</div>
+            <div>
+                <div class="member-name">${p.display_name || p.username}</div>
+                <div class="text-xs text-muted">@${p.username}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function startDM(userId) {
+    // Check existing DM
+    const { data: existing } = await supabase
+        .from('dm_participants')
+        .select('channel_id')
+        .eq('user_id', AppState.user.id);
+
+    for (const dm of existing || []) {
+        const { data: other } = await supabase
+            .from('dm_participants')
+            .select('user_id')
+            .eq('channel_id', dm.channel_id)
+            .eq('user_id', userId)
+            .single();
+
+        if (other) {
+            selectDM(dm.channel_id, '', 'offline');
+            return;
+        }
+    }
+
+    // Create new DM channel
+    const { data: ch } = await supabase.from('channels').insert({ is_dm: true, name: 'dm' }).select().single();
+    await supabase.from('dm_participants').insert([
+        { channel_id: ch.id, user_id: AppState.user.id },
+        { channel_id: ch.id, user_id: userId }
+    ]);
+
+    selectDM(ch.id, '', 'online');
+    loadDMs();
+}
+
+async function selectDM(channelId, name, status) {
+    AppState.currentChannel = { id: channelId, name: name || 'DM', is_dm: true };
+    AppState.isBotChannel = false;
+
+    document.getElementById('chatIcon').textContent = '💌';
+    document.getElementById('chatName').textContent = name || 'DM';
+    document.getElementById('chatTopic').textContent = '';
+    document.getElementById('botModeBar').classList.remove('show');
+
+    showChatView();
+    await loadMessages(channelId);
+    subscribeChannel(channelId);
+}
+
+async function sendFriendRequest(userId) {
+    const { error } = await supabase.from('friends').insert({ requester_id: AppState.user.id, addressee_id: userId });
+    if (error) {
+        Toast.error('Đã gửi yêu cầu kết bạn rồi hoặc lỗi xảy ra.');
+    } else {
+        Toast.success('Đã gửi yêu cầu kết bạn! 🐍');
+    }
+}
+
+function showStatusMenu(e) {
+    e.stopPropagation();
+    const statuses = [
+        { id: 'online', label: '🟢 Online' },
+        { id: 'idle', label: '🌙 Vắng mặt' },
+        { id: 'dnd', label: '⛔ Không làm phiền' },
+        { id: 'offline', label: '⚫ Ẩn danh' },
+    ];
+
+    const menu = document.createElement('div');
+    menu.className = 'ctx-menu';
+    menu.style.cssText = 'position:fixed;bottom:60px;left:80px;z-index:2000';
+    menu.innerHTML = statuses.map(s => `
+        <div class="ctx-menu-item" onclick="setStatus('${s.id}'); this.closest('.ctx-menu').remove()">${s.label}</div>
+    `).join('');
+
+    document.body.appendChild(menu);
+    setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
+}
+
+async function setStatus(status) {
+    await supabase.from('profiles').update({ status }).eq('id', AppState.user.id);
+    AppState.profile.status = status;
+    document.getElementById('selfStatus').textContent = `● ${status}`;
+}
+
+function showSettings() {
+    showModal(`
+        <div class="modal-header">
+            <h3 class="modal-title">⚙ Cài đặt</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="input-group">
+            <label class="input-label">Tên hiển thị</label>
+            <input type="text" class="input" id="settingsName" value="${AppState.profile?.display_name || ''}">
+        </div>
+        <div class="input-group">
+            <label class="input-label">Bio</label>
+            <input type="text" class="input" id="settingsBio" value="${AppState.profile?.bio || ''}" placeholder="Mô tả bản thân...">
+        </div>
+        ${AppState.profile?.role === 'admin' ? `
+        <div class="divider">Admin Panel</div>
+        <button class="btn btn-ghost w-full mb-2" onclick="showSignupRequests()">📋 Yêu cầu đăng ký</button>
+        ` : ''}
+        <button class="btn btn-primary w-full mt-4" onclick="saveSettings()">Lưu</button>
+        <button class="btn btn-danger w-full mt-2" onclick="Auth.signOut()">🚪 Đăng xuất</button>
+    `);
+}
+
+async function saveSettings() {
+    const name = document.getElementById('settingsName').value.trim();
+    const bio = document.getElementById('settingsBio').value.trim();
+
+    await supabase.from('profiles').update({ display_name: name, bio }).eq('id', AppState.user.id);
+    AppState.profile.display_name = name;
+    AppState.profile.bio = bio;
+    updateSelfPanel();
+    closeModal();
+    Toast.success('Đã lưu cài đặt!');
+}
+
+async function showSignupRequests() {
+    const { data } = await supabase.from('signup_requests').select('*').eq('status', 'pending').order('created_at');
+
+    showModal(`
+        <div class="modal-header">
+            <h3 class="modal-title">📋 Yêu cầu đăng ký (${data?.length || 0})</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div style="max-height:400px;overflow-y:auto">
+            ${!data?.length ? '<div class="text-muted text-sm">Không có yêu cầu nào</div>' :
+            data.map(req => `
+                <div style="background:var(--bg-tertiary);border-radius:8px;padding:12px;margin-bottom:8px">
+                    <div class="flex justify-between items-center mb-2">
+                        <div>
+                            <strong>@${req.username}</strong>
+                            <span class="text-muted text-sm ml-2">${req.email}</span>
+                        </div>
+                        <span class="text-xs text-muted">${TimeUtil.format(req.created_at)}</span>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <button class="btn btn-primary btn-sm" onclick="approveRequest('${req.id}', '${req.email}', '${req.username}', '${req.password_hash}', '${req.display_name || req.username}')">✓ Duyệt</button>
+                        <button class="btn btn-danger btn-sm" onclick="rejectRequest('${req.id}')">✕ Từ chối</button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `);
+}
+
+async function approveRequest(reqId, email, username, passwordHash, displayName) {
+    // In production: call Supabase Admin API via Edge Function to create user
+    // Here we simulate: admin creates the user manually via Dashboard
+    Toast.info('Tạo tài khoản qua Supabase Dashboard > Auth > Users rồi chạy: UPDATE profiles SET role=\'user\' WHERE username=\'' + username + '\'');
+
+    await supabase.from('signup_requests').update({
+        status: 'approved',
+        reviewed_by: AppState.user.id,
+        reviewed_at: new Date().toISOString()
+    }).eq('id', reqId);
+
+    Toast.success(`Đã duyệt @${username}`);
+    showSignupRequests();
+}
+
+async function rejectRequest(reqId) {
+    const reason = prompt('Lý do từ chối (có thể bỏ qua):') || 'Không phù hợp';
+    await supabase.from('signup_requests').update({
+        status: 'rejected',
+        reviewed_by: AppState.user.id,
+        reviewed_at: new Date().toISOString(),
+        reject_reason: reason
+    }).eq('id', reqId);
+    Toast.info('Đã từ chối yêu cầu');
+    showSignupRequests();
+}
+
+function showCreateChannel(e) {
+    e.stopPropagation();
+    if (!AppState.currentServer) return;
+    showModal(`
+        <div class="modal-header">
+            <h3 class="modal-title">Tạo kênh mới</h3>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="input-group">
+            <label class="input-label">Tên kênh</label>
+            <input type="text" class="input" id="newChName" placeholder="ten-kenh">
+        </div>
+        <button class="btn btn-primary w-full" onclick="createChannel()">Tạo kênh</button>
+    `);
+}
+
+async function createChannel() {
+    const name = document.getElementById('newChName').value.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!name) return;
+
+    await supabase.from('channels').insert({
+        server_id: AppState.currentServer.id,
+        name,
+        type: 'text'
+    });
+
+    closeModal();
+    await loadChannels(AppState.currentServer.id);
+    Toast.success(`Kênh #${name} đã tạo!`);
+}
+
+function showPinnedMessages() {
+    Toast.info('Tính năng đang phát triển 🚧');
+}
+
+function showSearch() {
+    Toast.info('Tính năng đang phát triển 🚧');
+}
+
+function showServerSettings(e) {
+    e.stopPropagation();
+    if (!AppState.currentServer || AppState.currentServer.owner_id !== AppState.user.id) return;
+    Toast.info('Server settings đang phát triển 🚧');
+}
+
+function showEmojiPicker() {
+    const emojis = ['😀','😂','😍','🥰','😎','🤔','😅','🥲','😭','😡','🐍','🔥','💚','❤️','👍','👏','✨','🎉'];
+    const input = document.getElementById('msgInput');
+    const picker = document.createElement('div');
+    picker.className = 'ctx-menu';
+    picker.style.cssText = 'position:fixed;bottom:80px;right:80px;z-index:1000';
+    picker.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:200px">${emojis.map(e => `<span style="font-size:22px;cursor:pointer;padding:4px;border-radius:4px" onclick="document.getElementById('msgInput').value+=\\'${e}\\'; this.closest('.ctx-menu').remove()">${e}</span>`).join('')}</div>`;
+    document.body.appendChild(picker);
+    setTimeout(() => document.addEventListener('click', () => picker.remove(), { once: true }), 50);
+}
+
+function showModal(html) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'activeModal';
+    overlay.innerHTML = `<div class="modal">${html}</div>`;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+    document.body.appendChild(overlay);
+}
+
+function closeModal() {
+    document.getElementById('activeModal')?.remove();
+}
+
+// Handle scroll for "new messages" button
+document.getElementById('messages-container')?.addEventListener('scroll', function() {
+    const atBottom = this.scrollHeight - this.scrollTop - this.clientHeight < 100;
+    document.getElementById('scrollToBottom').classList.toggle('show', !atBottom);
+});
+</script>
+</body>
+</html>
