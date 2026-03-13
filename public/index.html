@@ -1095,16 +1095,19 @@ async function doCodeLogin() {
   const btn = document.getElementById('code-btn');
   btn.disabled = true; btn.textContent = 'ĐANG XÁC NHẬN...';
   try {
-    // Tìm code trong DB (dùng service role qua anon — bảng auth_codes có policy public read)
-    const { data, error } = await db.from('auth_codes')
-      .select('*, profiles(*)')
+    // Bước 1: tìm code
+    const { data: codeRow, error } = await db.from('auth_codes')
+      .select('id, code, user_id')
       .eq('code', code)
-      .single();
-    if (error || !data) {
+      .maybeSingle();
+    if (error || !codeRow) {
       showAlert('code-err', 'Mã không đúng hoặc không tồn tại.');
       return;
     }
-    if (!data.profiles) {
+    // Bước 2: lấy profile riêng
+    const { data } = await db.from('profiles').select('*').eq('id', codeRow.user_id).single();
+    data && (data.profiles = data); // compat
+    if (!data) {
       showAlert('code-err', 'Tài khoản không tồn tại. Liên hệ admin.');
       return;
     }
@@ -1114,12 +1117,12 @@ async function doCodeLogin() {
     }
     // Lưu session vào localStorage
     localStorage.setItem('tqt-session', JSON.stringify({
-      user_id: data.user_id,
+      user_id: codeRow.user_id,
       code: code,
       logged_in_at: new Date().toISOString()
     }));
     // Load app trực tiếp với profile
-    await loadAppWithProfile(data.profiles);
+    await loadAppWithProfile(data);
   } catch (e) {
     showAlert('code-err', 'Lỗi: ' + e.message);
   } finally {
