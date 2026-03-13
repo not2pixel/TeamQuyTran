@@ -1065,7 +1065,7 @@ const App = {
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('[TQT] auth event:', event, !!session);
     if (event === 'SIGNED_OUT') { resetApp(); showAuth(); return; }
-    if (session && !App.user) {
+    if (event === 'SIGNED_IN' && session && !App.user) {
       await initApp(session);
     }
   });
@@ -1081,13 +1081,13 @@ function hideGate() { document.getElementById('gate').classList.add('hide'); }
 async function initApp(session) {
   if (App.user) return;
   App.user = session.user;
-  await db.auth.getSession(); // ensure token is set
   let p = await fetchProfile(session.user.id);
   if (!p) {
-    await new Promise(r => setTimeout(r, 1200));
+    await new Promise(r => setTimeout(r, 1000));
     p = await fetchProfile(session.user.id);
   }
   if (!p) {
+    App.user = null; // reset so retry works
     hideGate();
     showAuth();
     Toast.error('Không tải được profile. Liên hệ admin.');
