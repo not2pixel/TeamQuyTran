@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuyTranTeam Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg0:#0a0a0f;--bg1:#111118;--bg2:#18181f;--bg3:#202028;--bg4:#2a2a35;--line:#3a3a48;--acc:#e8c96d;--red:#e85d5d;--green:#5de8a0;--t0:#f0f0f5;--t1:#b8b8c8;--t2:#787890;--t3:#484860;--font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg0);color:var(--t0);font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font-family:var(--font);cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:var(--font)}
+
+/* LOGIN */
+#login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+#login-page.hide{display:none}
+.login-box{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:36px;width:100%;max-width:360px;text-align:center}
+.login-title{font-size:24px;font-weight:700;color:var(--acc);margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--t2);margin-bottom:28px;font-family:var(--mono)}
+.login-inp{width:100%;background:var(--bg1);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:14px;color:var(--t0);outline:none;text-align:center;font-family:var(--mono);letter-spacing:.1em}
+.login-inp:focus{border-color:var(--acc)}
+.login-btn{margin-top:10px;width:100%;padding:12px;background:var(--acc);color:var(--bg0);border-radius:8px;font-weight:700;font-size:14px}
+.login-btn:hover{filter:brightness(1.1)}
+.login-err{font-size:12px;color:var(--red);margin-top:8px;font-family:var(--mono)}
+
+/* ADMIN APP */
+#admin-app{display:none;min-height:100vh}
+#admin-app.show{display:block}
+.admin-nav{background:var(--bg1);border-bottom:1px solid var(--line);padding:0 24px;display:flex;align-items:center;height:56px;gap:16px}
+.nav-logo{font-size:18px;font-weight:700;color:var(--acc)}
+.nav-sub{font-size:12px;color:var(--t2);font-family:var(--mono)}
+.nav-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.tab-btn{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;color:var(--t2);transition:all .15s}
+.tab-btn.active,.tab-btn:hover{background:var(--bg3);color:var(--t0)}
+.tab-btn.active{color:var(--acc)}
+.logout-btn{padding:6px 12px;border-radius:6px;font-size:12px;color:var(--t3);font-family:var(--mono)}
+.logout-btn:hover{color:var(--red)}
+
+.admin-body{max-width:900px;margin:0 auto;padding:28px 20px}
+.section-title{font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.badge-count{background:var(--acc);color:var(--bg0);border-radius:99px;padding:2px 8px;font-size:12px;font-weight:700}
+
+/* BOT CARDS */
+.bot-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start}
+.bot-card-av{width:56px;height:56px;border-radius:50%;overflow:hidden;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.bot-card-av img{width:100%;height:100%;object-fit:cover}
+.bot-card-body{flex:1;min-width:0}
+.bot-card-name{font-weight:700;font-size:16px;margin-bottom:4px}
+.bot-card-by{font-size:11px;color:var(--t2);font-family:var(--mono);margin-bottom:8px}
+.bot-card-desc{font-size:13px;color:var(--t1);margin-bottom:10px}
+.bot-card-prompt{background:var(--bg0);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t2);font-family:var(--mono);line-height:1.6;max-height:100px;overflow-y:auto;margin-bottom:12px;white-space:pre-wrap}
+.card-actions{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn-approve{background:var(--green);color:var(--bg0)}
+.btn-reject{background:rgba(232,93,93,.15);color:var(--red);border:1px solid rgba(232,93,93,.3)}
+.btn-delete{background:rgba(232,93,93,.1);color:var(--red);border:1px solid rgba(232,93,93,.2)}
+.btn-ghost{background:var(--bg4);color:var(--t1)}
+
+.status-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;font-family:var(--mono)}
+.status-pending{background:rgba(232,201,109,.1);color:var(--acc);border:1px solid rgba(232,201,109,.3)}
+.status-approved{background:rgba(93,232,160,.1);color:var(--green);border:1px solid rgba(93,232,160,.3)}
+.status-rejected{background:rgba(232,93,93,.1);color:var(--red);border:1px solid rgba(232,93,93,.3)}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--t3)}
+.empty-state p{font-family:var(--mono);font-size:13px}
+
+/* ADD BOT FORM */
+.add-form{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:24px}
+.add-form h3{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--acc)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{margin-bottom:0}
+.field.full{grid-column:1/-1}
+.label{display:block;font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.inp{width:100%;background:var(--bg1);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--t0);outline:none;transition:border-color .15s}
+.inp:focus{border-color:var(--acc)}
+.inp::placeholder{color:var(--t3)}
+textarea.inp{resize:vertical;min-height:80px;line-height:1.5;font-family:var(--mono)}
+
+/* TOAST */
+#toast-root{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 16px;border-radius:8px;font-size:13px;background:var(--bg3);border:1px solid var(--line);animation:su .2s ease}
+@keyframes su{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.toast.ok{border-color:rgba(93,232,160,.4);color:var(--green)}
+.toast.err{border-color:rgba(232,93,93,.4);color:var(--red)}
+</style>
+</head>
+<body>
+<div id="toast-root"></div>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-title">QuyTranTeam</div>
+    <div class="login-sub">// admin panel</div>
+    <input class="login-inp" id="pw-inp" type="password" placeholder="Mật khẩu admin" onkeydown="if(event.key==='Enter')adminLogin()">
+    <button class="login-btn" onclick="adminLogin()">ĐĂNG NHẬP</button>
+    <div class="login-err" id="pw-err"></div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="admin-app">
+  <div class="admin-nav">
+    <div>
+      <div class="nav-logo">QuyTranTeam Admin</div>
+      <div class="nav-sub">Bot Management</div>
+    </div>
+    <div class="nav-right">
+      <button class="tab-btn active" id="tab-pending" onclick="switchTab('pending')">Chờ duyệt</button>
+      <button class="tab-btn" id="tab-approved" onclick="switchTab('approved')">Đã duyệt</button>
+      <button class="tab-btn" id="tab-add" onclick="switchTab('add')">+ Thêm bot</button>
+      <button class="logout-btn" onclick="adminLogout()">logout</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div id="panel-pending"></div>
+    <div id="panel-approved" style="display:none"></div>
+    <div id="panel-add" style="display:none">
+      <div class="add-form">
+        <h3>✦ Thêm bot trực tiếp</h3>
+        <div class="form-grid">
+          <div class="field"><label class="label">Tên bot</label><input class="inp" id="a-name" placeholder="Tên nhân vật"></div>
+          <div class="field"><label class="label">Avatar URL</label><input class="inp" id="a-av" placeholder="https://..."></div>
+          <div class="field"><label class="label">Mô tả</label><input class="inp" id="a-desc" placeholder="Tính cách ngắn"></div>
+          <div class="field"><label class="label">Thêm bởi</label><input class="inp" id="a-by" placeholder="Admin"></div>
+          <div class="field full"><label class="label">System Prompt</label><textarea class="inp" id="a-prompt" placeholder="Mô tả chi tiết nhân vật..." style="min-height:120px"></textarea></div>
+        </div>
+        <div style="margin-top:14px"><button class="btn btn-approve" onclick="addBot()">✓ Thêm bot</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL  = 'https://sfqlaxcxenndevprhmci.supabase.co';
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcWxheGN4ZW5uZGV2cHJobWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMjk5MjMsImV4cCI6MjA3MzYwNTkyM30.lx4FTXvQj7tj7zz8u9gK3bVdaaFPtIC_sWnuxUxcSG8';
+const ADMIN_PASS = 'tqt-admin-2024'; // đổi pass này
+
+function adminLogin() {
+  const pw = document.getElementById('pw-inp').value;
+  if (pw !== ADMIN_PASS) { document.getElementById('pw-err').textContent = 'Sai mật khẩu'; return; }
+  document.getElementById('login-page').classList.add('hide');
+  document.getElementById('admin-app').classList.add('show');
+  loadPending();
+  loadApproved();
+}
+function adminLogout() { location.reload(); }
+
+async function sbFetch(path, opts = {}) {
+  return fetch(`${SUPA_URL}${path}`, {
+    ...opts,
+    headers: { 'apikey': SUPA_ANON, 'Authorization': `Bearer ${SUPA_ANON}`, 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  });
+}
+
+let curTab = 'pending';
+function switchTab(tab) {
+  curTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+  ['pending','approved','add'].forEach(t => {
+    document.getElementById(`panel-${t}`).style.display = t === tab ? '' : 'none';
+  });
+  if (tab === 'pending') loadPending();
+  if (tab === 'approved') loadApproved();
+}
+
+async function loadPending() {
+  const r = await sbFetch('/rest/v1/bot_requests?select=*&status=eq.pending&order=created_at.desc');
+  const data = r.ok ? await r.json() : [];
+  const el = document.getElementById('panel-pending');
+  el.innerHTML = `<div class="section-title">Chờ duyệt <span class="badge-count">${data.length}</span></div>`;
+  if (!data.length) { el.innerHTML += `<div class="empty-state"><p>// không có yêu cầu nào</p></div>`; return; }
+  el.innerHTML += data.map(b => botCard(b, true)).join('');
+}
+
+async function loadApproved() {
+  const r = await sbFetch('/rest/v1/bot_requests?select=*&status=neq.pending&order=created_at.desc');
+  const data = r.ok ? await r.json() : [];
+  const el = document.getElementById('panel-approved');
+  el.innerHTML = `<div class="section-title">Tất cả bot <span class="badge-count">${data.length}</span></div>`;
+  if (!data.length) { el.innerHTML += `<div class="empty-state"><p>// chưa có bot nào</p></div>`; return; }
+  el.innerHTML += data.map(b => botCard(b, false)).join('');
+}
+
+function botCard(b, isPending) {
+  const av = b.avatar_url ? `<img src="${b.avatar_url}" alt="" onerror="this.style.display='none'">` : (b.name?.[0] || '?');
+  const statusBadge = `<span class="status-badge status-${b.status}">${b.status}</span>`;
+  return `<div class="bot-card" id="card-${b.id}">
+    <div class="bot-card-av">${av}</div>
+    <div class="bot-card-body">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div class="bot-card-name">${b.name}</div>
+        ${statusBadge}
+      </div>
+      <div class="bot-card-by">Đề xuất bởi: ${b.submitted_by || 'ẩn danh'} · ${new Date(b.created_at).toLocaleDateString('vi-VN')}</div>
+      ${b.description ? `<div class="bot-card-desc">${b.description}</div>` : ''}
+      <div class="bot-card-prompt">${b.prompt}</div>
+      <div class="card-actions">
+        ${isPending ? `
+          <button class="btn btn-approve" onclick="approve('${b.id}')">✓ Duyệt</button>
+          <button class="btn btn-reject" onclick="reject('${b.id}')">✕ Từ chối</button>
+        ` : ''}
+        ${b.status === 'approved' ? `<button class="btn btn-reject" onclick="reject('${b.id}')">Gỡ duyệt</button>` : ''}
+        <button class="btn btn-delete" onclick="deleteBot('${b.id}')">🗑 Xóa</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function approve(id) {
+  const r = await sbFetch(`/rest/v1/bot_requests?id=eq.${id}`, {
+    method: 'PATCH', headers: { 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ status: 'approved', reviewed_at: new Date().toISOString() })
+  });
+  if (r.ok) { toast('✓ Đã duyệt!', 'ok'); document.getElementById(`card-${id}`)?.remove(); loadApproved(); }
+  else toast('Lỗi khi duyệt', 'err');
+}
+
+async function reject(id) {
+  const r = await sbFetch(`/rest/v1/bot_requests?id=eq.${id}`, {
+    method: 'PATCH', headers: { 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ status: 'rejected', reviewed_at: new Date().toISOString() })
+  });
+  if (r.ok) { toast('Đã từ chối', 'ok'); loadPending(); loadApproved(); }
+  else toast('Lỗi', 'err');
+}
+
+async function deleteBot(id) {
+  if (!confirm('Xóa bot này?')) return;
+  const r = await sbFetch(`/rest/v1/bot_requests?id=eq.${id}`, { method: 'DELETE' });
+  if (r.ok) { toast('Đã xóa', 'ok'); document.getElementById(`card-${id}`)?.remove(); }
+  else toast('Lỗi khi xóa', 'err');
+}
+
+async function addBot() {
+  const name   = document.getElementById('a-name').value.trim();
+  const av     = document.getElementById('a-av').value.trim();
+  const desc   = document.getElementById('a-desc').value.trim();
+  const prompt = document.getElementById('a-prompt').value.trim();
+  const by     = document.getElementById('a-by').value.trim() || 'Admin';
+  if (!name || !prompt) { toast('Cần tên và prompt!', 'err'); return; }
+  const r = await sbFetch('/rest/v1/bot_requests', {
+    method: 'POST', headers: { 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ name, avatar_url: av || null, description: desc, prompt, submitted_by: by, status: 'approved' })
+  });
+  if (r.ok) {
+    toast('✓ Bot đã thêm!', 'ok');
+    ['a-name','a-av','a-desc','a-prompt','a-by'].forEach(id => document.getElementById(id).value = '');
+    loadApproved();
+  } else toast('Lỗi khi thêm bot', 'err');
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-root').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+</body>
+</html>
