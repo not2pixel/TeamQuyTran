@@ -784,7 +784,7 @@ img { display: block; max-width: 100%; }
     <div class="auth-view on" id="v-login">
       <div id="login-err" class="alert alert-err"></div>
       <div class="field"><label class="label">Email</label><input class="inp" id="l-email" type="email" placeholder="email@example.com"></div>
-      <div class="field"><label class="label">Mật khẩu</label><input class="inp" id="l-pass" type="password" placeholder="••••••••" onkeydown="if(e.key==='Enter')doLogin()"></div>
+      <div class="field"><label class="label">Mật khẩu</label><input class="inp" id="l-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="btn btn-primary w-full" id="login-btn" onclick="doLogin()">ĐĂNG NHẬP</button>
       <div style="text-align:center;margin-top:12px"><a href="#" onclick="switchTab('forgot');return false" style="font-size:13px;color:var(--t2)">Quên mật khẩu?</a></div>
     </div>
