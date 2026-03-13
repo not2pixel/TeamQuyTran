@@ -739,39 +739,58 @@ const AppState = {
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', async () => {
-    // Supabase chưa chắc init xong — đợi core.js init
-    await new Promise(r => setTimeout(r, 50));
+document.addEventListener('DOMContentLoaded', () => {
+    // Dùng onAuthStateChange thay vì getSession() để tránh race condition
+    // Supabase sẽ emit SIGNED_IN ngay khi đọc được session từ localStorage
+    db().auth.onAuthStateChange(async (event, session) => {
+        // Chỉ xử lý lần đầu (INITIAL_SESSION hoặc SIGNED_IN)
+        if (event === 'SIGNED_OUT') {
+            window.location.replace('/LogIn/');
+            return;
+        }
 
-    let session = null;
-    try {
-        const res = await db().auth.getSession();
-        session = res.data.session;
-    } catch(e) {}
+        // Chưa có session sau khi check xong
+        if (!session) {
+            window.location.replace('/LogIn/');
+            return;
+        }
 
-    if (!session) {
-        window.location.replace('/LogIn/');
-        return;
-    }
+        // Đã xử lý rồi (tránh chạy lại khi token refresh)
+        if (AppState.user) return;
 
-    AppState.user = session.user;
-    AppState.profile = await Auth.getProfile(session.user.id);
+        AppState.user = session.user;
 
-    if (!AppState.profile) { await Auth.signOut(); return; }
+        // Load profile — retry nếu chưa tạo kịp (trigger async)
+        let profile = await Auth.getProfile(session.user.id);
+        if (!profile) {
+            // Đợi trigger tạo profile
+            await new Promise(r => setTimeout(r, 1000));
+            profile = await Auth.getProfile(session.user.id);
+        }
+        if (!profile) {
+            // Profile thật sự không tồn tại
+            console.error('[TQT] Profile not found for', session.user.id);
+            window.location.replace('/LogIn/');
+            return;
+        }
 
-    // Reveal app, remove gate
-    document.getElementById('app').classList.add('ready');
-    const gate = document.getElementById('authGate');
-    gate.style.opacity = '0';
-    gate.style.transition = 'opacity 0.3s';
-    setTimeout(() => gate.remove(), 300);
+        AppState.profile = profile;
 
-    // Update UI
-    updateSelfPanel();
+        // Reveal app, remove gate
+        document.getElementById('app').classList.add('ready');
+        const gate = document.getElementById('authGate');
+        if (gate) {
+            gate.style.opacity = '0';
+            gate.style.transition = 'opacity 0.3s';
+            setTimeout(() => gate.remove(), 300);
+        }
 
-    // Load DMs and servers
-    await loadServers();
-    await loadDMs();
+        // Update UI
+        updateSelfPanel();
+
+        // Load DMs and servers
+        await loadServers();
+        await loadDMs();
 
     // Subscribe to realtime
     subscribeGlobal();
