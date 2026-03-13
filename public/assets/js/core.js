@@ -1,19 +1,13 @@
 // ============================================================
 // TeamQuyTran - Core
-// SUPABASE_URL và SUPABASE_ANON_KEY được Vercel inject lúc build
-// qua vercel.json headers hoặc hardcode anon key (safe to public)
 // ============================================================
 
 const TQT = {
-    // Anon key an toàn để public — RLS bảo vệ data
-    // Thay 2 giá trị này = giá trị thật của bạn
-    SUPABASE_URL:      window.__TQT_SUPABASE_URL__      || 'https://sfqlaxcxenndevprhmci.supabase.co',
-    SUPABASE_ANON_KEY: window.__TQT_SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcWxheGN4ZW5uZGV2cHJobWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMjk5MjMsImV4cCI6MjA3MzYwNTkyM30.lx4FTXvQj7tj7zz8u9gK3bVdaaFPtIC_sWnuxUxcSG8',
-
+    SUPABASE_URL:      'https://sfqlaxcxenndevprhmci.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcWxheGN4ZW5uZGV2cHJobWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMjk5MjMsImV4cCI6MjA3MzYwNTkyM30.lx4FTXvQj7tj7zz8u9gK3bVdaaFPtIC_sWnuxUxcSG8',
     API_BOT:     '/api/bot',
     API_UPLOAD:  '/api/upload',
     API_APPROVE: '/api/approve-user',
-
     APP_NAME: 'TeamQuyTran',
     BOT_NAME: 'QuýBot',
     MAX_FILE_SIZE: 8 * 1024 * 1024,
@@ -23,24 +17,24 @@ const TQT = {
 
 // ============================================================
 // SUPABASE CLIENT
-// window.supabase từ CDN = namespace object { createClient, ... }
-// Sau initSupabase(), window.supabase = client instance
+// Vấn đề: window.supabase từ CDN là non-configurable property
+// → KHÔNG dùng Object.defineProperty, dùng tên riêng _db
 // ============================================================
-let _sb = null;
+let _db = null;
 
 function initSupabase() {
-    if (_sb) return _sb;
-    // Lưu factory trước khi override
-    const factory = window.supabase;
-    _sb = factory.createClient(TQT.SUPABASE_URL, TQT.SUPABASE_ANON_KEY, {
+    if (_db) return _db;
+    // window.supabase = CDN namespace {createClient, ...} — KHÔNG override nó
+    _db = window.supabase.createClient(TQT.SUPABASE_URL, TQT.SUPABASE_ANON_KEY, {
         realtime: { params: { eventsPerSecond: 10 } }
     });
-    // Override window.supabase → client instance
-    Object.defineProperty(window, 'supabase', {
-        get() { return _sb; },
-        configurable: true,
-    });
-    return _sb;
+    return _db;
+}
+
+// Getter ngắn — dùng db() thay vì window.supabase ở mọi nơi
+function db() {
+    if (!_db) initSupabase();
+    return _db;
 }
 
 // ============================================================
@@ -48,8 +42,12 @@ function initSupabase() {
 // ============================================================
 const API = {
     async call(endpoint, body) {
-        const session = await window.Auth.getSession();
-        const token = session?.access_token;
+        let token = null;
+        try {
+            const s = await db().auth.getSession();
+            token = s?.data?.session?.access_token;
+        } catch(e) {}
+
         const res = await fetch(endpoint, {
             method: 'POST',
             headers: {
@@ -90,23 +88,24 @@ const LocalCache = {
 };
 
 // ============================================================
-// AUTH
+// AUTH — dùng db() thay vì window.supabase
 // ============================================================
 window.Auth = {
     async getSession() {
-        return (await window.supabase.auth.getSession()).data.session;
+        const { data } = await db().auth.getSession();
+        return data?.session ?? null;
     },
     async getProfile(userId) {
-        const { data } = await window.supabase.from('profiles').select('*').eq('id', userId).single();
+        const { data } = await db().from('profiles').select('*').eq('id', userId).single();
         return data;
     },
     async signOut() {
         try {
             const s = await this.getSession();
             if (s?.user?.id)
-                await window.supabase.from('profiles').update({ status: 'offline' }).eq('id', s.user.id);
+                await db().from('profiles').update({ status: 'offline' }).eq('id', s.user.id);
         } catch(e) {}
-        await window.supabase.auth.signOut();
+        await db().auth.signOut();
         LocalCache.clear();
         window.location.replace('/LogIn/');
     },
@@ -203,5 +202,7 @@ const TimeUtil = {
     }
 };
 
-// Auto-init khi script load xong
+// ============================================================
+// INIT — chạy ngay khi script load
+// ============================================================
 initSupabase();
