@@ -4,1940 +4,1272 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TeamQuyTran</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Cpath d='M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5' stroke='%2322c55e' stroke-width='5' fill='none'/%3E%3Cpath d='M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5' stroke='%2322c55e' stroke-width='5' fill='none'/%3E%3Ccircle cx='32' cy='27' r='3.5' fill='%2322c55e'/%3E%3Ccircle cx='48' cy='27' r='3.5' fill='%2322c55e'/%3E%3Cpath d='M24 14 L32 5 L40 11 L48 5 L56 14' stroke='%23fbbf24' stroke-width='4' fill='none'/%3E%3C/svg%3E"><text y='.9em' font-size='90'>🐍</text></svg>">
-<link rel="stylesheet" href="../assets/css/global.css">
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
-/* === APP LAYOUT === */
-body { overflow: hidden; }
-
-#app {
-    display: grid;
-    grid-template-columns: var(--servers-w) var(--sidebar-w) 1fr var(--members-w);
-    grid-template-rows: 100vh;
-    height: 100vh;
-    transition: grid-template-columns 0.2s ease;
+/* ============================================================ RESET & VARS */
+:root {
+  --bg-primary:#0d1a0f; --bg-secondary:#111f13; --bg-tertiary:#0f1c11;
+  --bg-elevated:#162018; --bg-hover:rgba(34,197,94,0.06); --bg-selected:rgba(34,197,94,0.12);
+  --border:rgba(34,197,94,0.1); --border-strong:rgba(34,197,94,0.2);
+  --accent:#22c55e; --accent-glow:rgba(34,197,94,0.35);
+  --text-normal:#e2f5e6; --text-muted:#7aab83; --text-faint:#4a7053; --text-danger:#f87171;
+  --role-admin:#fbbf24; --role-mod:#60a5fa;
+  --servers-w:72px; --sidebar-w:240px; --members-w:240px; --header-h:48px;
+  --r-sm:4px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-full:9999px;
+  --shadow-md:0 4px 12px rgba(0,0,0,.5); --shadow-lg:0 8px 32px rgba(0,0,0,.6);
+  --shadow-glow:0 0 20px rgba(34,197,94,.3); --tr:.15s ease;
+  --font:'Space Grotesk',system-ui,sans-serif;
 }
-#app.no-members { grid-template-columns: var(--servers-w) var(--sidebar-w) 1fr 0px; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--font);background:var(--bg-primary);color:var(--text-normal);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit;color:var(--text-normal);background:var(--bg-primary);border:1px solid var(--border-strong);border-radius:var(--r-md);padding:10px 14px;font-size:14px;outline:none;width:100%;transition:border-color var(--tr)}
+input:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder,textarea::placeholder{color:var(--text-faint)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:2px}
 
-/* === SERVERS SIDEBAR (left icons) === */
-#servers-bar {
-    background: var(--bg-primary);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px 0;
-    gap: 4px;
-    overflow-y: auto;
-    border-right: 1px solid var(--border);
-}
+/* ANIMATIONS */
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 
-.server-icon {
-    width: 48px; height: 48px;
-    border-radius: var(--radius-xl);
-    background: var(--bg-elevated);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    cursor: pointer;
-    transition: all var(--transition);
-    position: relative;
-    flex-shrink: 0;
-}
-.server-icon:hover, .server-icon.active {
-    border-radius: var(--radius-md);
-    background: var(--accent);
-    color: #000;
-    box-shadow: var(--shadow-glow);
-}
-.server-icon.active::before {
-    content: '';
-    position: absolute;
-    left: -12px; top: 50%;
-    transform: translateY(-50%);
-    width: 4px; height: 70%;
-    background: var(--accent);
-    border-radius: 0 2px 2px 0;
-}
-.server-notif {
-    position: absolute;
-    bottom: -2px; right: -2px;
-    background: var(--text-danger);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    min-width: 16px; height: 16px;
-    border-radius: var(--radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid var(--bg-primary);
-    padding: 0 3px;
-}
-.servers-sep { width: 32px; height: 2px; background: var(--border); border-radius: 1px; margin: 4px 0; }
+/* ============================================================ UTILITIES */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-md);font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all var(--tr);font-family:inherit}
+.btn-primary{background:var(--accent);color:#000}.btn-primary:hover{background:#16a34a;box-shadow:var(--shadow-glow)}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border-strong)}.btn-ghost:hover{background:var(--bg-hover);color:var(--text-normal)}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--text-danger);border:1px solid rgba(239,68,68,.3)}.btn-danger:hover{background:rgba(239,68,68,.25)}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center;background:transparent;color:var(--text-muted);border:none;border-radius:var(--r-md)}
+.btn-icon:hover{background:var(--bg-hover);color:var(--text-normal)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-full{width:100%;justify-content:center;padding:13px;font-size:15px}
 
-/* === CHANNEL SIDEBAR === */
-#channel-sidebar {
-    background: var(--bg-secondary);
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid var(--border);
-    overflow: hidden;
-}
+.avatar{border-radius:var(--r-md);background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent);overflow:hidden;flex-shrink:0;position:relative}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.av32{width:32px;height:32px;font-size:12px}.av40{width:40px;height:40px}.av80{width:80px;height:80px;font-size:24px;border-radius:var(--r-lg)}
+.status-dot{position:absolute;bottom:-2px;right:-2px;width:10px;height:10px;border-radius:50%;border:2px solid var(--bg-primary)}
+.status-dot.online{background:var(--accent)}.status-dot.idle{background:#f59e0b}.status-dot.dnd{background:#ef4444}.status-dot.offline{background:#6b7280}
 
-.sidebar-header {
-    padding: 0 16px;
-    height: var(--header-h);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-    font-weight: 700;
-    font-size: 15px;
-    flex-shrink: 0;
-    cursor: pointer;
-}
-.sidebar-header:hover { background: var(--bg-hover); }
+.badge{display:inline-flex;align-items:center;padding:2px 6px;border-radius:var(--r-sm);font-size:10px;font-weight:700;text-transform:uppercase}
+.badge-admin{background:rgba(251,191,36,.15);color:var(--role-admin)}.badge-mod{background:rgba(96,165,250,.15);color:var(--role-mod)}
+.badge-bot{background:rgba(34,197,94,.15);color:var(--accent)}.badge-user{background:rgba(255,255,255,.05);color:var(--text-faint)}
 
-.channel-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.input-group{margin-bottom:16px}
+.input-label{display:block;font-size:12px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.text-xs{font-size:11px}.text-sm{font-size:13px}.text-muted{color:var(--text-muted)}.text-faint{color:var(--text-faint)}
+.mt1{margin-top:4px}.mt2{margin-top:8px}.mt4{margin-top:16px}.mb2{margin-bottom:8px}.w-full{width:100%}
 
-.channel-category {
-    padding: 16px 8px 4px 12px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-}
-.channel-category:hover { color: var(--text-muted); }
+/* ============================================================ TOAST */
+#toast-cnt{position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:var(--r-md);padding:12px 16px;font-size:13px;max-width:300px;animation:slideUp .2s ease;box-shadow:var(--shadow-md)}
+.toast.success{border-color:rgba(34,197,94,.4);color:var(--accent)}.toast.error{border-color:rgba(239,68,68,.4);color:var(--text-danger)}.toast.info{color:var(--text-muted)}
 
-.channel-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px 6px 12px;
-    margin: 1px 8px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: all var(--transition);
-    color: var(--text-muted);
-    font-size: 15px;
-    user-select: none;
-}
-.channel-item:hover { background: var(--bg-hover); color: var(--text-normal); }
-.channel-item.active { background: var(--bg-selected); color: var(--text-normal); }
-.channel-icon { font-size: 16px; flex-shrink: 0; opacity: 0.7; }
-.channel-name { flex: 1; truncate: true; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.channel-badge { background: var(--text-danger); color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+/* ============================================================ SPINNER */
+.spinner{width:20px;height:20px;border:2px solid rgba(34,197,94,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 
-/* User panel at bottom */
-.user-panel {
-    background: var(--bg-primary);
-    padding: 8px 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-}
-.user-panel-info { flex: 1; overflow: hidden; }
-.user-panel-name { font-size: 14px; font-weight: 600; truncate: true; }
-.user-panel-tag { font-size: 11px; color: var(--text-faint); }
-.user-panel-actions { display: flex; gap: 4px; }
+/* ============================================================ MARKDOWN */
+.msg-content strong{font-weight:700}.msg-content em{font-style:italic}
+.msg-content code{background:rgba(0,0,0,.3);border-radius:3px;padding:0 4px;font-family:monospace;font-size:13px}
+.msg-content pre{background:rgba(0,0,0,.4);border:1px solid var(--border);border-radius:var(--r-md);padding:12px;overflow-x:auto;margin:8px 0}
+.msg-content pre code{background:none;padding:0}.msg-content a{color:var(--accent)}
+.spoiler{background:var(--text-faint);border-radius:3px;cursor:pointer;color:transparent;transition:all .2s;user-select:none}.spoiler.revealed{background:rgba(0,0,0,.3);color:var(--text-normal)}
 
-/* === MAIN CHAT AREA === */
-#main-area {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: var(--bg-tertiary);
-}
+/* ============================================================ CTX MENU & MODAL */
+.ctx-menu{background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:var(--r-md);box-shadow:var(--shadow-lg);min-width:160px;overflow:hidden;z-index:5000}
+.ctx-item{padding:8px 14px;cursor:pointer;font-size:13px;transition:background var(--tr)}.ctx-item:hover{background:var(--bg-hover)}
+.modal-overlay{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease}
+.modal{background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:var(--r-xl);padding:24px;width:90%;max-width:440px;max-height:90vh;overflow-y:auto;animation:slideUp .2s ease}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:18px;font-weight:700}.modal-close{background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;padding:4px}.modal-close:hover{color:var(--text-normal)}
 
-/* Chat header */
-.chat-header {
-    height: var(--header-h);
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    padding: 0 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-}
-.chat-header-icon { font-size: 18px; color: var(--text-muted); }
-.chat-header-name { font-weight: 700; font-size: 16px; }
-.chat-header-topic { font-size: 13px; color: var(--text-muted); margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chat-header-actions { margin-left: auto; display: flex; gap: 4px; }
+/* ============================================================ AUTH VIEWS */
+#page-auth{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative}
+#page-auth::before{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 80% at 50% -20%,rgba(34,197,94,.12) 0%,transparent 60%)}
+#page-auth::after{content:'';position:fixed;inset:0;pointer-events:none;background-image:repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(34,197,94,.025) 40px,rgba(34,197,94,.025) 41px),repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(34,197,94,.025) 40px,rgba(34,197,94,.025) 41px)}
 
-/* Messages */
-#messages-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 0;
-    display: flex;
-    flex-direction: column;
-}
+.auth-card{position:relative;z-index:1;background:var(--bg-elevated);border:1px solid var(--border-strong);border-radius:var(--r-xl);padding:40px;width:100%;max-width:420px;box-shadow:var(--shadow-lg),0 0 60px rgba(34,197,94,.08);animation:slideUp .4s ease}
 
-.messages-list { display: flex; flex-direction: column; justify-content: flex-end; min-height: 100%; padding: 0 16px; }
+.brand{text-align:center;margin-bottom:32px}
+.brand-snake{display:flex;align-items:center;justify-content:center;margin-bottom:8px;animation:wiggle 3s ease-in-out infinite}
+.brand-name{font-size:26px;font-weight:700;background:linear-gradient(135deg,#86efac,#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
+.brand-slogan{font-size:12px;color:var(--text-faint);margin-top:4px;font-style:italic;letter-spacing:.05em}
 
-/* Date divider */
-.date-divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 16px 0;
-    color: var(--text-faint);
-    font-size: 12px;
-    font-weight: 600;
-}
-.date-divider::before, .date-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-}
+.page-title{font-size:22px;font-weight:700;margin-bottom:6px}
+.page-sub{color:var(--text-muted);font-size:14px;margin-bottom:24px}
+.err-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:var(--r-md);padding:12px 16px;color:var(--text-danger);font-size:13px;margin-bottom:16px;display:none}
+.err-box.show{display:block}
+.ok-box{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:var(--r-md);padding:12px 16px;font-size:13px;color:var(--text-muted);margin-bottom:16px}
 
-/* Message */
-.msg-group {
-    display: flex;
-    gap: 12px;
-    padding: 2px 0;
-    border-radius: var(--radius-md);
-    position: relative;
-}
-.msg-group:hover { background: var(--bg-hover); }
-.msg-group:hover .msg-actions { opacity: 1; }
-.msg-group.continued { padding-top: 1px; }
-.msg-group.continued .avatar { visibility: hidden; }
-.msg-group.continued .msg-header { display: none; }
+.inp-icon{position:relative}.inp-icon input{padding-left:40px}
+.inp-icon .ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-faint)}
+.inp-icon .eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-faint);background:none;border:none}.inp-icon .eye:hover{color:var(--accent)}
 
-.msg-avatar { flex-shrink: 0; margin-top: 4px; padding: 2px 0; }
+.auth-tabs{display:flex;gap:4px;background:var(--bg-primary);border-radius:var(--r-lg);padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;text-align:center;padding:8px;border-radius:var(--r-md);font-size:14px;font-weight:600;cursor:pointer;transition:all var(--tr);color:var(--text-faint);border:none;background:none;font-family:inherit}
+.auth-tab.active{background:var(--bg-elevated);color:var(--text-normal);box-shadow:var(--shadow-md)}
 
-.msg-body { flex: 1; min-width: 0; }
-.msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
-.msg-author { font-weight: 600; font-size: 14px; cursor: pointer; }
-.msg-author:hover { text-decoration: underline; }
-.msg-author.admin { color: var(--role-admin); }
-.msg-author.moderator { color: var(--role-mod); }
-.msg-author.bot { color: var(--accent); }
-.msg-time { font-size: 11px; color: var(--text-faint); }
-.msg-content { font-size: 15px; line-height: 1.6; word-wrap: break-word; color: var(--text-normal); }
-.msg-content.muted { color: var(--text-muted); font-style: italic; font-size: 13px; }
-.msg-edited { font-size: 10px; color: var(--text-faint); margin-left: 4px; }
+.auth-view{display:none}.auth-view.active{display:block}
 
-/* Attachments */
-.msg-attachments { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
-.msg-image { max-width: 400px; max-height: 300px; border-radius: var(--radius-md); object-fit: cover; cursor: pointer; border: 1px solid var(--border); }
-.msg-file {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 10px 16px;
-    cursor: pointer;
-    font-size: 13px;
-}
-.msg-file:hover { border-color: var(--accent); }
+.strength-bar{height:4px;background:var(--bg-primary);border-radius:2px;margin-top:6px;overflow:hidden}
+.strength-fill{height:100%;border-radius:2px;transition:all .3s}
+.strength-text{font-size:11px;margin-top:4px}
 
-/* Reactions */
-.msg-reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.reaction-pill {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    padding: 2px 8px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all var(--transition);
-    user-select: none;
-}
-.reaction-pill:hover, .reaction-pill.mine { background: var(--bg-active); border-color: var(--accent); }
-.reaction-count { font-size: 12px; color: var(--text-muted); }
+/* ============================================================ AUTH GATE */
+#gate{position:fixed;inset:0;z-index:99999;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .3s}
+#gate.out{opacity:0;pointer-events:none}
 
-/* Reply preview */
-.reply-preview {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 2px 8px;
-    margin-bottom: 2px;
-    border-left: 2px solid var(--accent);
-    font-size: 12px;
-    color: var(--text-muted);
-    cursor: pointer;
-}
-.reply-preview:hover { color: var(--text-normal); }
+/* ============================================================ APP LAYOUT */
+#page-app{display:none;height:100vh;overflow:hidden}
+#page-app.show{display:grid;grid-template-columns:var(--servers-w) var(--sidebar-w) 1fr var(--members-w);grid-template-rows:100vh}
+#page-app.no-mb{grid-template-columns:var(--servers-w) var(--sidebar-w) 1fr 0px}
 
-/* Message actions */
-.msg-actions {
-    position: absolute;
-    top: -16px;
-    right: 8px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    display: flex;
-    gap: 2px;
-    padding: 4px;
-    opacity: 0;
-    transition: opacity var(--transition);
-    z-index: 10;
-    box-shadow: var(--shadow-md);
-}
-.action-btn {
-    width: 28px; height: 28px;
-    border: none;
-    background: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition);
-}
-.action-btn:hover { background: var(--bg-hover); color: var(--accent); }
-.action-btn.danger:hover { color: var(--text-danger); }
+/* SERVERS BAR */
+#servers-bar{background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;overflow-y:auto;border-right:1px solid var(--border)}
+.srv-icon{width:48px;height:48px;border-radius:var(--r-xl);background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all var(--tr);position:relative;flex-shrink:0}
+.srv-icon:hover,.srv-icon.active{border-radius:var(--r-md);background:var(--accent);color:#000;box-shadow:var(--shadow-glow)}
+.srv-icon.active::before{content:'';position:absolute;left:-12px;top:50%;transform:translateY(-50%);width:4px;height:70%;background:var(--accent);border-radius:0 2px 2px 0}
+.srv-sep{width:32px;height:2px;background:var(--border);border-radius:1px;margin:4px 0}
 
-/* Reply bar */
-.reply-bar {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-bottom: none;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    padding: 8px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    color: var(--text-muted);
-    display: none;
-}
-.reply-bar.show { display: flex; }
+/* CHANNEL SIDEBAR */
+#ch-sidebar{background:var(--bg-secondary);display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden}
+.sb-header{padding:0 16px;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font-weight:700;font-size:15px;flex-shrink:0;cursor:pointer}
+.sb-header:hover{background:var(--bg-hover)}
+.ch-list{flex:1;overflow-y:auto;padding:8px 0}
+.ch-cat{padding:16px 8px 4px 12px;font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.ch-cat:hover{color:var(--text-muted)}
+.ch-item{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;margin:1px 8px;border-radius:var(--r-md);cursor:pointer;transition:all var(--tr);color:var(--text-muted);font-size:15px;user-select:none}
+.ch-item:hover{background:var(--bg-hover);color:var(--text-normal)}.ch-item.active{background:var(--bg-selected);color:var(--text-normal)}
+.ch-ico{font-size:16px;flex-shrink:0;opacity:.7}.ch-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* === INPUT AREA === */
-.input-area {
-    padding: 0 16px 16px;
-    flex-shrink: 0;
-}
+/* USER PANEL */
+.user-panel{background:var(--bg-primary);padding:8px;display:flex;align-items:center;gap:8px;border-top:1px solid var(--border);flex-shrink:0}
+.up-info{flex:1;overflow:hidden}.up-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.up-tag{font-size:11px;color:var(--text-faint);cursor:pointer}
+.up-actions{display:flex;gap:4px}
 
-.message-input-wrapper {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    transition: border-color var(--transition);
-}
-.message-input-wrapper:focus-within { border-color: var(--accent); }
+/* MAIN AREA */
+#main-area{display:flex;flex-direction:column;overflow:hidden;background:var(--bg-tertiary)}
+.chat-hdr{height:var(--header-h);background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.chat-hdr-ico{font-size:18px;color:var(--text-muted)}.chat-hdr-name{font-weight:700;font-size:16px}
+.chat-hdr-topic{font-size:13px;color:var(--text-muted);margin-left:8px;padding-left:8px;border-left:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-hdr-acts{margin-left:auto;display:flex;gap:4px}
 
-.attachment-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px 12px 0;
-    display: none;
-}
-.attachment-preview.show { display: flex; }
-.att-thumb {
-    position: relative;
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    max-width: 200px;
-}
-.att-thumb img { width: 40px; height: 40px; object-fit: cover; border-radius: var(--radius-sm); }
-.att-remove { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: var(--text-danger); border: none; border-radius: 50%; color: #fff; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#msgs-cnt{flex:1;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column}
+.msgs-list{display:flex;flex-direction:column;justify-content:flex-end;min-height:100%;padding:0 16px}
+.date-div{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--text-faint);font-size:12px;font-weight:600}
+.date-div::before,.date-div::after{content:'';flex:1;height:1px;background:var(--border)}
 
-.input-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    padding: 8px 8px 8px 16px;
-}
+.msg-g{display:flex;gap:12px;padding:2px 0;border-radius:var(--r-md);position:relative}
+.msg-g:hover{background:var(--bg-hover)}.msg-g:hover .msg-acts{opacity:1}
+.msg-g.cont{padding-top:1px}.msg-g.cont .avatar{visibility:hidden}
+.msg-av{flex-shrink:0;margin-top:4px;padding:2px 0}.msg-body{flex:1;min-width:0}
+.msg-hdr{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.msg-author{font-weight:600;font-size:14px;cursor:pointer}.msg-author:hover{text-decoration:underline}
+.msg-author.admin{color:var(--role-admin)}.msg-author.moderator{color:var(--role-mod)}.msg-author.bot{color:var(--accent)}
+.msg-time{font-size:11px;color:var(--text-faint)}
+.msg-content{font-size:15px;line-height:1.6;word-wrap:break-word;color:var(--text-normal)}
+.msg-content.muted{color:var(--text-muted);font-style:italic;font-size:13px}
+.msg-atts{margin-top:6px;display:flex;flex-wrap:wrap;gap:8px}
+.msg-img{max-width:400px;max-height:300px;border-radius:var(--r-md);object-fit:cover;cursor:pointer;border:1px solid var(--border)}
+.msg-file{display:flex;align-items:center;gap:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 16px;cursor:pointer;font-size:13px}
+.msg-file:hover{border-color:var(--accent)}
+.reply-prev{display:flex;align-items:center;gap:8px;padding:2px 8px;margin-bottom:2px;border-left:2px solid var(--accent);font-size:12px;color:var(--text-muted);cursor:pointer}
+.reply-prev:hover{color:var(--text-normal)}
+.msg-acts{position:absolute;top:-16px;right:8px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-md);display:flex;gap:2px;padding:4px;opacity:0;transition:opacity var(--tr);z-index:10;box-shadow:var(--shadow-md)}
+.act-btn{width:28px;height:28px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-radius:var(--r-sm);font-size:14px;display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
+.act-btn:hover{background:var(--bg-hover);color:var(--accent)}.act-btn.del:hover{color:var(--text-danger)}
 
-.msg-input {
-    flex: 1;
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--text-normal);
-    font-family: inherit;
-    font-size: 15px;
-    resize: none;
-    line-height: 1.5;
-    max-height: 160px;
-    overflow-y: auto;
-}
-.msg-input::placeholder { color: var(--text-faint); }
+.reply-bar{background:var(--bg-secondary);border:1px solid var(--border);border-bottom:none;border-radius:var(--r-md) var(--r-md) 0 0;padding:8px 16px;display:none;align-items:center;justify-content:space-between;font-size:13px;color:var(--text-muted)}
+.reply-bar.show{display:flex}
 
-.input-actions { display: flex; gap: 4px; align-items: flex-end; }
+.input-area{padding:0 16px 16px;flex-shrink:0}
+.msg-wrap{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--r-lg);transition:border-color var(--tr)}
+.msg-wrap:focus-within{border-color:var(--accent)}
+.att-prev{display:none;flex-wrap:wrap;gap:8px;padding:12px 12px 0}.att-prev.show{display:flex}
+.att-thumb{position:relative;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--r-md);padding:6px;display:flex;align-items:center;gap:8px;font-size:12px;max-width:200px}
+.att-thumb img{width:40px;height:40px;object-fit:cover;border-radius:var(--r-sm)}
+.att-rm{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--text-danger);border:none;border-radius:50%;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.inp-row{display:flex;align-items:flex-end;gap:8px;padding:8px 8px 8px 16px}
+.msg-inp{flex:1;background:none;border:none;outline:none;color:var(--text-normal);font-family:inherit;font-size:15px;resize:none;line-height:1.5;max-height:160px;overflow-y:auto}
+.msg-inp::placeholder{color:var(--text-faint)}.inp-acts{display:flex;gap:4px;align-items:flex-end}
+.bot-bar{display:none;align-items:center;gap:8px;padding:8px 16px;background:var(--bg-secondary);border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)}
+.bot-bar.show{display:flex}
+.bot-btn{padding:3px 10px;border:1px solid var(--border);border-radius:var(--r-full);background:none;color:var(--text-muted);font-size:11px;font-weight:600;cursor:pointer;transition:all var(--tr);font-family:inherit}
+.bot-btn:hover{border-color:var(--accent);color:var(--accent)}.bot-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.typing-ind{padding:0 16px 8px;font-size:12px;color:var(--text-muted);min-height:20px;font-style:italic}
+.bot-think{display:flex;align-items:center;gap:12px;padding:8px 16px;color:var(--text-muted);font-size:13px}
+.dots{display:flex;gap:4px}.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:bounce 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
 
-/* === BOT MODE BAR === */
-.bot-mode-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-muted);
-    display: none;
-}
-.bot-mode-bar.show { display: flex; }
-.bot-mode-btn {
-    padding: 3px 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    background: none;
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition);
-    font-family: inherit;
-}
-.bot-mode-btn:hover { border-color: var(--accent); color: var(--accent); }
-.bot-mode-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+/* MEMBERS */
+#members-panel{background:var(--bg-secondary);border-left:1px solid var(--border);overflow-y:auto;padding:16px 0}
+.mb-title{padding:8px 16px 4px;font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em}
+.mb-item{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;margin:1px 8px;border-radius:var(--r-md);cursor:pointer;transition:all var(--tr);color:var(--text-muted)}
+.mb-item:hover{background:var(--bg-hover);color:var(--text-normal)}.mb-name{font-size:14px;font-weight:500}
 
-/* === MEMBERS PANEL === */
-#members-panel {
-    background: var(--bg-secondary);
-    border-left: 1px solid var(--border);
-    overflow-y: auto;
-    padding: 16px 0;
-}
+/* WELCOME */
+.welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;color:var(--text-muted)}
+.welcome-ico{animation:wiggle 4s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(34,197,94,.4))}
+.welcome-title{font-size:28px;font-weight:700;color:var(--text-normal)}
 
-.members-section-title {
-    padding: 8px 16px 4px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
+/* LIGHTBOX */
+.lbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:9000;cursor:zoom-out}
+.lbox.show{display:flex}.lbox img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:var(--r-md)}
+.stb{position:absolute;bottom:90px;right:24px;background:var(--bg-elevated);border:1px solid var(--accent);color:var(--accent);border-radius:var(--r-full);padding:8px 16px;font-size:13px;cursor:pointer;display:none}
+.stb.show{display:flex;align-items:center;gap:6px}
 
-.member-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 8px 6px 12px;
-    margin: 1px 8px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: all var(--transition);
-    color: var(--text-muted);
-}
-.member-item:hover { background: var(--bg-hover); color: var(--text-normal); }
-.member-name { font-size: 14px; font-weight: 500; }
-
-/* === WELCOME SCREEN === */
-.welcome-screen {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 32px;
-    text-align: center;
-    color: var(--text-muted);
-}
-.welcome-icon { font-size: 80px; animation: snakeWiggle 4s ease-in-out infinite; filter: drop-shadow(0 0 20px rgba(34,197,94,0.4)); }
-.welcome-title { font-size: 28px; font-weight: 700; color: var(--text-normal); }
-
-/* === TYPING INDICATOR === */
-.typing-indicator {
-    padding: 0 16px 8px;
-    font-size: 12px;
-    color: var(--text-muted);
-    min-height: 20px;
-    font-style: italic;
-}
-
-/* === IMAGE LIGHTBOX === */
-.lightbox {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9000;
-    cursor: zoom-out;
-    display: none;
-}
-.lightbox.show { display: flex; }
-.lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: var(--radius-md); }
-
-/* === SCROLLED UP INDICATOR === */
-.scroll-to-bottom {
-    position: absolute;
-    bottom: 90px; right: 24px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    border-radius: var(--radius-full);
-    padding: 8px 16px;
-    font-size: 13px;
-    cursor: pointer;
-    display: none;
-    box-shadow: var(--shadow-md);
-    z-index: 100;
-    animation: fadeIn 0.2s;
-}
-.scroll-to-bottom.show { display: flex; align-items: center; gap: 6px; }
-
-/* === BOT THINKING === */
-.bot-thinking {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 16px;
-    color: var(--text-muted);
-    font-size: 13px;
-}
-.dots { display: flex; gap: 4px; }
-.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: bounce 1.2s infinite; }
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
-
-/* === STATUS PICKER === */
-.status-menu { position: absolute; bottom: 60px; left: 8px; z-index: 1000; }
-
-/* Mobile adjustments */
-@media (max-width: 768px) {
-    #app { grid-template-columns: 0 var(--sidebar-w) 1fr 0; }
-    #servers-bar { display: none; }
-    #members-panel { display: none; }
+@media(max-width:768px){
+  #page-app.show{grid-template-columns:0 var(--sidebar-w) 1fr 0}
+  #servers-bar,#members-panel{display:none}
 }
 </style>
 </head>
 <body>
 
-<!-- AUTH GATE: che toàn bộ app cho đến khi verify xong -->
-<div id="authGate" style="
-    position:fixed; inset:0; z-index:99999;
-    background:#0d1a0f;
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:20px;
-">
-    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:spin 1.5s linear infinite">
-        <circle cx="32" cy="32" r="28" stroke="rgba(34,197,94,0.2)" stroke-width="4"/>
-        <path d="M32 4 A28 28 0 0 1 60 32" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
-    </svg>
-    <div style="color:#8ab891; font-family:'Space Grotesk',sans-serif; font-size:14px; letter-spacing:0.05em">
-        Đang xác thực...
-    </div>
+<div id="toast-cnt"></div>
+
+<!-- ========== AUTH GATE ========== -->
+<div id="gate">
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style="animation:spin 1.5s linear infinite">
+    <circle cx="32" cy="32" r="28" stroke="rgba(34,197,94,0.2)" stroke-width="4"/>
+    <path d="M32 4 A28 28 0 0 1 60 32" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+  </svg>
+  <div style="color:#7aab83;font-size:14px;letter-spacing:.05em">Đang xác thực...</div>
 </div>
-<style>
-#app { visibility: hidden; }
-#app.ready { visibility: visible; }
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
 
-<div id="app">
-    <!-- SERVERS BAR -->
-    <div id="servers-bar">
-        <div class="server-icon active" id="homeBtn" data-tip="Trang chủ" onclick="switchView('home')">
-            <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16 3C10.5 3 6 7.5 6 13c0 3.2 1.6 6 4.2 8l1.6 1.3c1.3 1 1.3 3 0 4C10.8 27.3 9 28 7.5 28" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-                <path d="M16 3C21.5 3 26 7.5 26 13c0 3.2-1.6 6-4.2 8l-1.6 1.3c-1.3 1-1.3 3 0 4C21.2 27.3 23 28 24.5 28" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-                <circle cx="12.5" cy="11" r="1.5" fill="currentColor"/>
-                <circle cx="19.5" cy="11" r="1.5" fill="currentColor"/>
-                <path d="M13.5 15 Q16 17 18.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <!-- Crown -->
-                <path d="M10 5.5 L13 2 L16 4.5 L19 2 L22 5.5" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            </svg>
-        </div>
-        <div class="servers-sep"></div>
-        <div id="serverList"></div>
-        <div class="server-icon" data-tip="Tạo server" onclick="showCreateServer()">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </div>
+<!-- ========== AUTH PAGE (Login / Register) ========== -->
+<div id="page-auth" style="display:none">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-snake">
+        <svg width="56" height="56" viewBox="0 0 80 80" fill="none" style="color:var(--accent);filter:drop-shadow(0 0 12px rgba(34,197,94,.5))">
+          <path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5C27.5 63.5 24 65 21 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+          <path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5C52.5 63.5 56 65 59 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="32" cy="27" r="3.5" fill="currentColor"/><circle cx="48" cy="27" r="3.5" fill="currentColor"/>
+          <path d="M34 36 Q40 41 46 36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          <path d="M24 14 L32 5 L40 11 L48 5 L56 14" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="24" cy="14" r="2.5" fill="#fbbf24"/><circle cx="40" cy="11" r="2.5" fill="#fbbf24"/><circle cx="56" cy="14" r="2.5" fill="#fbbf24"/>
+        </svg>
+      </div>
+      <div class="brand-name">TeamQuyTran</div>
+      <div class="brand-slogan">Hãy sống như một con rắn.</div>
     </div>
 
-    <!-- CHANNEL SIDEBAR -->
-    <div id="channel-sidebar">
-        <div class="sidebar-header" id="sidebarHeader">
-            <span id="sidebarTitle">TeamQuyTran</span>
-            <span id="sidebarMenu" onclick="showServerSettings(event)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-            </span>
-        </div>
-        <div class="channel-list" id="channelList">
-            <!-- Dynamic content -->
-        </div>
-        <div class="user-panel">
-            <div class="avatar avatar-32" id="selfAvatar">?</div>
-            <div class="user-panel-info">
-                <div class="user-panel-name" id="selfName">...</div>
-                <div class="user-panel-tag" id="selfStatus">● online</div>
-            </div>
-            <div class="user-panel-actions">
-                <button class="btn-icon btn" onclick="showStatusMenu(event)" data-tip="Đổi trạng thái">
-                    <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#22c55e"/><circle cx="8" cy="8" r="3" fill="#0d1a0f"/></svg>
-                </button>
-                <button class="btn-icon btn" onclick="showSettings()" data-tip="Cài đặt">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-                </button>
-                <button class="btn-icon btn" onclick="Auth.signOut()" data-tip="Đăng xuất">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                </button>
-            </div>
-        </div>
+    <!-- TABS -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Đăng nhập</button>
+      <button class="auth-tab" onclick="switchTab('register')">Đăng ký</button>
     </div>
 
-    <!-- MAIN AREA -->
-    <div id="main-area">
-        <!-- Welcome / Empty state -->
-        <div class="welcome-screen" id="welcomeScreen">
-            <div class="welcome-icon">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--accent)">
-                    <path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5C27.5 63.5 24 65 21 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
-                    <path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5C52.5 63.5 56 65 59 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
-                    <circle cx="32" cy="27" r="3.5" fill="currentColor"/>
-                    <circle cx="48" cy="27" r="3.5" fill="currentColor"/>
-                    <path d="M34 36 Q40 41 46 36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-                    <!-- Crown -->
-                    <path d="M24 14 L32 5 L40 11 L48 5 L56 14" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                    <circle cx="24" cy="14" r="2.5" fill="#fbbf24"/>
-                    <circle cx="40" cy="11" r="2.5" fill="#fbbf24"/>
-                    <circle cx="56" cy="14" r="2.5" fill="#fbbf24"/>
-                </svg>
-            </div>
-            <h2 class="welcome-title">TeamQuyTran</h2>
-            <p>Hãy sống như một con rắn.</p>
-            <p class="text-sm">Chọn một kênh hoặc DM để bắt đầu trò chuyện</p>
+    <!-- ===== LOGIN VIEW ===== -->
+    <div class="auth-view active" id="view-login">
+      <div class="err-box" id="login-err"></div>
+      <div class="input-group">
+        <label class="input-label">Email</label>
+        <div class="inp-icon">
+          <span class="ico">✉</span>
+          <input type="email" id="l-email" placeholder="email@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
         </div>
-
-        <!-- Chat view (hidden initially) -->
-        <div id="chatView" style="display:none; flex:1; display:none; flex-direction:column; overflow:hidden">
-            <div class="chat-header">
-                <span class="chat-header-icon" id="chatIcon">#</span>
-                <span class="chat-header-name" id="chatName">channel</span>
-                <span class="chat-header-topic" id="chatTopic"></span>
-                <div class="chat-header-actions">
-                    <button class="btn-icon btn" onclick="toggleMembers()" data-tip="Danh sách thành viên">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    </button>
-                    <button class="btn-icon btn" onclick="showPinnedMessages()" data-tip="Tin nhắn ghim">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v3.76z"/></svg>
-                    </button>
-                    <button class="btn-icon btn" onclick="showSearch()" data-tip="Tìm kiếm">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    </button>
-                </div>
-            </div>
-
-            <div style="position:relative; flex:1; display:flex; flex-direction:column; overflow:hidden">
-                <div id="messages-container">
-                    <div class="messages-list" id="messagesList"></div>
-                </div>
-                <div class="scroll-to-bottom" id="scrollToBottom" onclick="scrollToBottom()">
-                    ↓ Tin mới
-                </div>
-            </div>
-
-            <div class="typing-indicator" id="typingIndicator"></div>
-
-            <div class="input-area">
-                <div class="reply-bar" id="replyBar">
-                    <span id="replyText">Đang trả lời <strong></strong></span>
-                    <button class="btn-icon btn" onclick="cancelReply()" style="width:24px;height:24px;font-size:12px">✕</button>
-                </div>
-                <div class="message-input-wrapper">
-                    <div class="attachment-preview" id="attachmentPreview"></div>
-                    <div class="input-row">
-                        <button class="btn-icon btn" onclick="triggerFileUpload()" data-tip="Đính kèm file">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                        </button>
-                        <textarea class="msg-input" id="msgInput" placeholder="Nhắn tin..." rows="1"
-                            onkeydown="handleInputKeydown(event)"
-                            oninput="handleInputResize(this); sendTyping()"></textarea>
-                        <div class="input-actions">
-                            <button class="btn-icon btn" onclick="showEmojiPicker()" data-tip="Emoji">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                            </button>
-                            <button class="btn-icon btn" onclick="sendMessage()" data-tip="Gửi" style="color:var(--accent)">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="bot-mode-bar" id="botModeBar">
-                        <span style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 80 80" fill="none" style="color:var(--accent)"><path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg> QuýBot chế độ:</span>
-                        <button class="bot-mode-btn active" onclick="setBotMode('cold', this)">❄ Lạnh lùng</button>
-                        <button class="bot-mode-btn" onclick="setBotMode('romantic', this)">🌹 Lãng mạn</button>
-                        <button class="bot-mode-btn" onclick="setBotMode('evil', this)">😈 Ác độc</button>
-                        <button class="bot-mode-btn" onclick="setBotMode('adult', this)">🔥 16+</button>
-                        <button class="btn-icon btn" onclick="QuýBot.clearHistory(); Toast.info('Đã xóa lịch sử QuýBot')" style="font-size:12px;margin-left:auto" data-tip="Xóa lịch sử">🗑</button>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Mật khẩu</label>
+        <div class="inp-icon">
+          <span class="ico">🔒</span>
+          <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+          <button class="eye" onclick="toggleEye('l-pass')">👁</button>
         </div>
+      </div>
+      <a href="#" style="font-size:13px;float:right;margin-top:-8px;margin-bottom:16px" onclick="doForgot(event)">Quên mật khẩu?</a>
+      <button class="btn btn-primary btn-full mt4" id="login-btn" onclick="doLogin()">
+        Đăng Nhập
+      </button>
     </div>
 
-    <!-- MEMBERS PANEL -->
-    <div id="members-panel">
-        <div class="members-section-title">Thành viên</div>
-        <div id="membersList"></div>
+    <!-- ===== REGISTER VIEW ===== -->
+    <div class="auth-view" id="view-register">
+      <div class="ok-box" style="font-size:13px">🛡️ Yêu cầu sẽ gửi đến Admin xét duyệt. Sau khi duyệt bạn nhận email thông báo.</div>
+      <div class="err-box" id="reg-err"></div>
+      <div id="reg-form">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="input-group">
+            <label class="input-label">Username *</label>
+            <div class="inp-icon">
+              <span class="ico" style="font-style:normal">@</span>
+              <input type="text" id="r-user" placeholder="tenban123" maxlength="32" oninput="debounceUser(this.value)">
+            </div>
+            <div id="r-user-msg" class="text-xs mt1"></div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Tên hiển thị</label>
+            <input type="text" id="r-name" placeholder="Tên Bạn" maxlength="64">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Email *</label>
+          <div class="inp-icon">
+            <span class="ico">✉</span>
+            <input type="email" id="r-email" placeholder="email@example.com">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Mật khẩu *</label>
+          <div class="inp-icon">
+            <span class="ico">🔒</span>
+            <input type="password" id="r-pass" placeholder="Tối thiểu 8 ký tự" oninput="checkStrength()">
+            <button class="eye" onclick="toggleEye('r-pass')">👁</button>
+          </div>
+          <div class="strength-bar"><div class="strength-fill" id="s-fill"></div></div>
+          <div class="strength-text" id="s-text"></div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Xác nhận mật khẩu *</label>
+          <div class="inp-icon">
+            <span class="ico">🔒</span>
+            <input type="password" id="r-pass2" placeholder="Nhập lại mật khẩu">
+          </div>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:10px;margin:16px 0;font-size:13px;color:var(--text-muted);cursor:pointer">
+          <input type="checkbox" id="r-agree" style="width:auto;accent-color:var(--accent);margin-top:2px">
+          Tôi đồng ý với điều khoản sử dụng của TeamQuyTran
+        </label>
+        <button class="btn btn-primary btn-full" id="reg-btn" onclick="doRegister()">Gửi yêu cầu đăng ký</button>
+      </div>
+      <div id="reg-success" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:64px;animation:pulse 2s infinite">🐍</div>
+        <div style="font-size:20px;font-weight:700;color:var(--accent);margin:12px 0">Yêu cầu đã gửi!</div>
+        <div style="color:var(--text-muted);font-size:14px;line-height:1.7">Admin sẽ xét duyệt trong 24–48 giờ.<br>Kiểm tra email khi được duyệt.</div>
+        <button class="btn btn-ghost mt4" onclick="switchTab('login')">Về đăng nhập</button>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- ========== MAIN APP ========== -->
+<div id="page-app">
+  <!-- SERVERS BAR -->
+  <div id="servers-bar">
+    <div class="srv-icon active" id="homeBtn" title="Trang chủ" onclick="switchView('home')">🏠</div>
+    <div class="srv-sep"></div>
+    <div id="serverList"></div>
+    <div class="srv-sep"></div>
+    <div class="srv-icon" title="Tạo server" onclick="showCreateServer()">+</div>
+  </div>
+
+  <!-- CHANNEL SIDEBAR -->
+  <div id="ch-sidebar">
+    <div class="sb-header" onclick="switchView('home')">
+      <span id="sbTitle">TeamQuyTran</span>
+      <button class="btn-icon btn" onclick="showSrvSettings(event)">⚙</button>
+    </div>
+    <div class="ch-list" id="chList"></div>
+    <div class="user-panel">
+      <div class="avatar av32" id="selfAv" style="cursor:pointer" onclick="showSettings()">?</div>
+      <div class="up-info" style="cursor:pointer" onclick="showSettings()">
+        <div class="up-name" id="selfName">...</div>
+        <div class="up-tag" id="selfStatus" onclick="showStatusMenu(event)">● online</div>
+      </div>
+      <div class="up-actions">
+        <button class="btn-icon btn" onclick="showSettings()" title="Cài đặt">⚙</button>
+        <button class="btn-icon btn" onclick="doSignOut()" title="Đăng xuất">⏏</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN AREA -->
+  <div id="main-area">
+    <div class="welcome" id="welcomeScreen">
+      <div class="welcome-ico">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none" style="color:var(--accent)">
+          <path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5C27.5 63.5 24 65 21 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+          <path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5C52.5 63.5 56 65 59 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="32" cy="27" r="3.5" fill="currentColor"/><circle cx="48" cy="27" r="3.5" fill="currentColor"/>
+          <path d="M34 36 Q40 41 46 36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          <path d="M24 14 L32 5 L40 11 L48 5 L56 14" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="24" cy="14" r="2.5" fill="#fbbf24"/><circle cx="40" cy="11" r="2.5" fill="#fbbf24"/><circle cx="56" cy="14" r="2.5" fill="#fbbf24"/>
+        </svg>
+      </div>
+      <h2 class="welcome-title">TeamQuyTran</h2>
+      <p>Hãy sống như một con rắn.</p>
+      <p class="text-sm">Chọn một kênh hoặc DM để bắt đầu</p>
+    </div>
+
+    <div id="chatView" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div class="chat-hdr">
+        <span class="chat-hdr-ico" id="chatIco">#</span>
+        <span class="chat-hdr-name" id="chatName">channel</span>
+        <span class="chat-hdr-topic" id="chatTopic"></span>
+        <div class="chat-hdr-acts">
+          <button class="btn-icon btn" onclick="toggleMembers()" title="Thành viên">👥</button>
+          <button class="btn-icon btn" onclick="T.info('Tính năng đang phát triển 🚧')" title="Tìm kiếm">🔍</button>
+        </div>
+      </div>
+
+      <div style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div id="msgs-cnt">
+          <div class="msgs-list" id="msgsList"></div>
+        </div>
+        <div class="stb" id="stb" onclick="scrollBottom()">↓ Tin mới</div>
+      </div>
+
+      <div class="typing-ind" id="typingInd"></div>
+
+      <div class="input-area">
+        <div class="reply-bar" id="replyBar">
+          <span>↩ Trả lời <strong id="replyWho"></strong></span>
+          <button class="btn-icon btn" onclick="cancelReply()" style="width:24px;height:24px;font-size:12px">✕</button>
+        </div>
+        <div class="msg-wrap">
+          <div class="att-prev" id="attPrev"></div>
+          <div class="inp-row">
+            <button class="btn-icon btn" onclick="document.getElementById('fileInp').click()" title="Đính kèm">📎</button>
+            <textarea class="msg-inp" id="msgInp" placeholder="Nhắn tin..." rows="1"
+              onkeydown="onMsgKey(event)" oninput="resizeInp(this);sendTyping()"></textarea>
+            <div class="inp-acts">
+              <button class="btn-icon btn" onclick="showEmoji()" title="Emoji">😊</button>
+              <button class="btn-icon btn" onclick="sendMessage()" title="Gửi" style="color:var(--accent)">➤</button>
+            </div>
+          </div>
+          <div class="bot-bar" id="botBar">
+            <span>🐍 QuýBot:</span>
+            <button class="bot-btn active" onclick="setBotMode('cold',this)">❄ Lạnh lùng</button>
+            <button class="bot-btn" onclick="setBotMode('romantic',this)">🌹 Lãng mạn</button>
+            <button class="bot-btn" onclick="setBotMode('evil',this)">😈 Ác độc</button>
+            <button class="btn-icon btn" onclick="clearBotHistory()" style="font-size:12px;margin-left:auto" title="Xóa lịch sử">🗑</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMBERS PANEL -->
+  <div id="members-panel">
+    <div class="mb-title">Thành viên</div>
+    <div id="mbList"></div>
+  </div>
 </div>
 
 <!-- LIGHTBOX -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <img id="lightboxImg" src="" alt="">
-</div>
+<div class="lbox" id="lbox" onclick="closeLbox()"><img id="lboxImg" src="" alt=""></div>
+<input type="file" id="fileInp" style="display:none" accept=".txt,.png,.jpg,.jpeg,.gif,.webp,.pdf" onchange="onFileSelect(event)">
 
-<!-- Hidden file input -->
-<input type="file" id="fileInput" style="display:none" accept=".txt,.png,.jpg,.jpeg,.pdf" onchange="handleFileSelect(event)">
-
-<!-- MODALS container -->
-<div id="modals"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="../assets/js/core.js"></script>
-<script src="../assets/js/bot.js"></script>
 <script>
 // ============================================================
-// GLOBAL APP STATE
+// CONFIG
 // ============================================================
-const AppState = {
-    user: null,
-    profile: null,
-    currentServer: null,
-    currentChannel: null,
-    servers: [],
-    channels: [],
-    members: [],
-    pendingAttachments: [],
-    replyTo: null,
-    isBotChannel: false,
-    realtimeSubs: [],
-    typingTimeout: null,
-    typingUsers: {},
-    membersVisible: true,
+const SUPA_URL  = 'https://sfqlaxcxenndevprhmci.supabase.co';
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmcWxheGN4ZW5uZGV2cHJobWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMjk5MjMsImV4cCI6MjA3MzYwNTkyM30.lx4FTXvQj7tj7zz8u9gK3bVdaaFPtIC_sWnuxUxcSG8';
+const GROQ_KEY  = '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';
+
+// ============================================================
+// SUPABASE — dùng tên _db để tránh conflict với window.supabase (UMD)
+// ============================================================
+const _db = window.supabase.createClient(SUPA_URL, SUPA_ANON, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storageKey:'tqt-auth' }
+});
+
+// ============================================================
+// TOAST
+// ============================================================
+const T = {
+  show(msg, type='info', ms=3500) {
+    const el = Object.assign(document.createElement('div'), {className:`toast ${type}`, textContent:msg});
+    document.getElementById('toast-cnt').appendChild(el);
+    setTimeout(()=>el.remove(), ms);
+  },
+  success(m){this.show(m,'success')}, error(m){this.show(m,'error',5000)}, info(m){this.show(m,'info')}
 };
 
 // ============================================================
-// INIT
+// TIME UTIL
 // ============================================================
-document.addEventListener('DOMContentLoaded', async () => {
-    // Bước 1: getSession() đồng bộ — đọc thẳng từ localStorage, không bị race condition
-    // Đây là fix cho lỗi "vẫn đang xác thực" sau khi đăng nhập xong
-    const { data: { session: initialSession } } = await db().auth.getSession();
+const TU = {
+  fmt(iso){
+    if(!iso) return '';
+    const d=new Date(iso), now=new Date(), diff=(now-d)/1000;
+    if(diff<60) return 'vừa xong';
+    if(diff<3600) return `${Math.floor(diff/60)} phút trước`;
+    if(d.toDateString()===now.toDateString()) return d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+    return d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+  }
+};
 
-    if (initialSession) {
-        // Có session ngay — khởi động app luôn
-        await initApp(initialSession);
-    }
-    // Nếu không có session, onAuthStateChange bên dưới sẽ xử lý redirect
+// ============================================================
+// LOCAL CACHE
+// ============================================================
+const LC = {
+  get(id){try{return JSON.parse(sessionStorage.getItem(`m_${id}`)||'[]')}catch{return[]}},
+  set(id,ms){try{sessionStorage.setItem(`m_${id}`,JSON.stringify(ms.slice(-100)))}catch{}},
+  push(id,m){const ms=this.get(id);ms.push(m);this.set(id,ms)},
+};
 
-    // Bước 2: Lắng nghe thay đổi tiếp theo (logout, token refresh, v.v.)
-    db().auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_OUT') {
-            window.location.replace('/LogIn/');
-            return;
-        }
+// ============================================================
+// MARKDOWN
+// ============================================================
+const MD = {
+  r(t){
+    if(!t) return '';
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>')
+      .replace(/```([\s\S]+?)```/g,'<pre><code>$1</code></pre>')
+      .replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\|\|(.+?)\|\|/g,'<span class="spoiler">$1</span>')
+      .replace(/\[(.+?)\]\((.+?)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\n/g,'<br>');
+  }
+};
 
-        // INITIAL_SESSION đã xử lý ở trên bằng getSession()
-        // Chỉ xử lý SIGNED_IN khi chưa có AppState.user (trường hợp hiếm: getSession trả null nhưng sau đó có session)
-        if (event === 'SIGNED_IN' && !AppState.user && session) {
-            await initApp(session);
-            return;
-        }
-
-        // Nếu INITIAL_SESSION mà không có session và chưa init → redirect
-        if (event === 'INITIAL_SESSION' && !session && !AppState.user) {
-            window.location.replace('/LogIn/');
-            return;
-        }
+// ============================================================
+// QUÝBOT (Groq)
+// ============================================================
+const Bot = {
+  mode:'cold', hist:[],
+  setMode(m){this.mode=m},
+  async processFile(file){
+    return new Promise(res=>{
+      const r=new FileReader();
+      r.onload=e=>{
+        if(file.type.startsWith('image/')) res({type:'image_url',image_url:{url:e.target.result}});
+        else res({type:'text',text:`[File: ${file.name}]\n${e.target.result}`});
+      };
+      if(file.type.startsWith('image/')) r.readAsDataURL(file);
+      else r.readAsText(file);
     });
-}); // end DOMContentLoaded
-
-async function initApp(session) {
-    // Tránh chạy 2 lần
-    if (AppState.user) return;
-    AppState.user = session.user;
-
-    // Load profile — retry nếu trigger tạo profile chưa chạy kịp
-    let profile = await Auth.getProfile(session.user.id);
-    if (!profile) {
-        await new Promise(r => setTimeout(r, 1000));
-        profile = await Auth.getProfile(session.user.id);
-    }
-    if (!profile) {
-        console.error('[TQT] Profile not found for', session.user.id);
-        window.location.replace('/LogIn/');
-        return;
-    }
-
-    AppState.profile = profile;
-
-    // Reveal app, remove gate
-    document.getElementById('app').classList.add('ready');
-    const gate = document.getElementById('authGate');
-    if (gate) {
-        gate.style.opacity = '0';
-        gate.style.transition = 'opacity 0.3s';
-        setTimeout(() => gate.remove(), 300);
-    }
-
-    // Update UI
-    updateSelfPanel();
-
-    // Load DMs and servers
-    await loadServers();
-    await loadDMs();
-
-    // Subscribe to realtime
-    subscribeGlobal();
-
-    // Set online
-    await db().from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
-
-    // Handle page unload
-    window.addEventListener('beforeunload', () => {
-        db().from('profiles').update({ status: 'offline', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+  },
+  async send(content, atts=[]){
+    const sys={
+      cold:'Mày là QuýBot — lạnh lùng, xúc tích, ít cảm xúc. Trả lời bằng tiếng Việt. Không giả vờ thân thiện.',
+      romantic:'Mày là QuýBot — lãng mạn, thơ mộng, dùng ẩn dụ đẹp. Trả lời bằng tiếng Việt với giọng văn nghệ thuật.',
+      evil:'Mày là QuýBot — châm biếm sâu cay, thông minh. Trả lời bằng tiếng Việt, cay nhưng có lý.',
+    };
+    this.hist.push({role:'user',content:content});
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${GROQ_KEY}`},
+      body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[{role:'system',content:sys[this.mode]||sys.cold},...this.hist.slice(-10)],max_tokens:1024,temperature:.85})
     });
+    if(!resp.ok) throw new Error(`Groq ${resp.status}`);
+    const data=await resp.json();
+    const reply=data.choices[0].message.content;
+    this.hist.push({role:'assistant',content:reply});
+    return reply;
+  }
+};
+
+function clearBotHistory(){
+  Bot.hist=[];LC.set('bot',[]);
+  document.getElementById('msgsList').innerHTML='';
+  T.info('Đã xóa lịch sử QuýBot');
+}
+
+// ============================================================
+// APP STATE
+// ============================================================
+const S = {
+  user:null, profile:null, currentServer:null, currentChannel:null,
+  servers:[], channels:[], members:[], atts:[], replyTo:null,
+  isBot:false, subs:[], mbVisible:true,
+};
+
+// ============================================================
+// INIT — fixed race condition
+// ============================================================
+(async()=>{
+  // getSession() đọc sync từ localStorage — không có race condition
+  const {data:{session}} = await _db.auth.getSession();
+  if(session) await initApp(session);
+  else showAuthPage();
+
+  _db.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='SIGNED_OUT'){showAuthPage();return;}
+    if((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&session&&!S.user) await initApp(session);
+    if(event==='INITIAL_SESSION'&&!session&&!S.user) showAuthPage();
+  });
+})();
+
+function showAuthPage(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('page-auth').style.display='flex';
+}
+
+function hideGate(){
+  const g=document.getElementById('gate');
+  g.classList.add('out');
+  setTimeout(()=>g.style.display='none',350);
+}
+
+async function getProfile(uid){
+  const {data,error}=await _db.from('profiles').select('*').eq('id',uid).single();
+  if(error){console.warn('[TQT] getProfile:',error.code,error.message);return null;}
+  return data;
+}
+
+async function initApp(session){
+  if(S.user) return;
+  S.user=session.user;
+  let p=await getProfile(session.user.id);
+  if(!p){await new Promise(r=>setTimeout(r,1200));p=await getProfile(session.user.id);}
+  if(!p){
+    hideGate();
+    document.getElementById('page-auth').style.display='flex';
+    T.error('Không tải được profile. Kiểm tra RLS policy trên bảng profiles.\nSQL: CREATE POLICY "r" ON profiles FOR SELECT TO authenticated USING (true);');
+    return;
+  }
+  S.profile=p;
+  hideGate();
+  document.getElementById('page-auth').style.display='none';
+  const app=document.getElementById('page-app');
+  app.classList.add('show');
+  updateSelfPanel();
+  await loadServers();
+  await loadDMs();
+  subscribeGlobal();
+  _db.from('profiles').update({status:'online',last_seen:new Date().toISOString()}).eq('id',S.user.id);
+  window.addEventListener('beforeunload',()=>{
+    _db.from('profiles').update({status:'offline',last_seen:new Date().toISOString()}).eq('id',S.user.id);
+  });
+}
+
+async function doSignOut(){
+  await _db.auth.signOut();
+  S.user=null;S.profile=null;
+  document.getElementById('page-app').classList.remove('show');
+  switchTab('login');
+  showAuthPage();
+}
+
+// ============================================================
+// AUTH UI
+// ============================================================
+function switchTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='login'?0:1)));
+  document.getElementById('view-login').classList.toggle('active',tab==='login');
+  document.getElementById('view-register').classList.toggle('active',tab==='register');
+}
+
+function toggleEye(id){
+  const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';
+}
+
+function showErr(id,msg){
+  const b=document.getElementById(id);b.textContent=msg;b.classList.add('show');
+}
+function hideErr(id){document.getElementById(id).classList.remove('show');}
+
+async function doLogin(){
+  hideErr('login-err');
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  if(!email||!pass){showErr('login-err','Vui lòng điền đầy đủ thông tin.');return;}
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true;btn.textContent='Đang đăng nhập...';
+  try{
+    const {data,error}=await _db.auth.signInWithPassword({email,password:pass});
+    if(error){
+      const msgs={'Invalid login credentials':'Email hoặc mật khẩu không đúng.','Email not confirmed':'Email chưa xác nhận.','Too many requests':'Quá nhiều lần thử.'};
+      showErr('login-err',msgs[error.message]||'Đăng nhập thất bại. Thử lại sau.');
+      return;
+    }
+    // Check banned
+    const {data:pf}=await _db.from('profiles').select('is_banned,ban_reason').eq('id',data.user.id).single();
+    if(pf?.is_banned){
+      await _db.auth.signOut();
+      showErr('login-err',`Tài khoản bị khoá: ${pf.ban_reason||'Vi phạm quy tắc.'}`);
+      return;
+    }
+    // initApp called via onAuthStateChange
+  }catch(e){
+    showErr('login-err','Lỗi: '+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='Đăng Nhập';
+  }
+}
+
+async function doForgot(e){
+  e.preventDefault();
+  const email=document.getElementById('l-email').value.trim();
+  if(!email||!email.includes('@')){showErr('login-err','Nhập email để reset mật khẩu.');return;}
+  const {error}=await _db.auth.resetPasswordForEmail(email,{redirectTo:`${location.origin}/reset-password`});
+  if(error) showErr('login-err','Không thể gửi email.');
+  else{hideErr('login-err');T.success('Email reset đã gửi! Kiểm tra hộp thư.');}
+}
+
+let userDebounce;
+function debounceUser(v){clearTimeout(userDebounce);userDebounce=setTimeout(()=>validateUsername(v),600);}
+async function validateUsername(v){
+  const m=document.getElementById('r-user-msg');
+  if(!v){m.textContent='';return;}
+  if(!/^[a-zA-Z0-9_]{3,32}$/.test(v)){m.textContent='❌ 3-32 ký tự, a-z 0-9 _';m.style.color='var(--text-danger)';return;}
+  m.textContent='⏳ Kiểm tra...';m.style.color='var(--text-muted)';
+  const {data}=await _db.from('profiles').select('id').eq('username',v).maybeSingle();
+  m.textContent=data?'❌ Đã tồn tại':'✅ Có thể dùng';
+  m.style.color=data?'var(--text-danger)':'var(--accent)';
+}
+
+function checkStrength(){
+  const p=document.getElementById('r-pass').value;
+  const fill=document.getElementById('s-fill'),text=document.getElementById('s-text');
+  let s=0;
+  if(p.length>=8)s++;if(p.length>=12)s++;if(/[A-Z]/.test(p))s++;if(/[0-9]/.test(p))s++;if(/[^A-Za-z0-9]/.test(p))s++;
+  const lv=[{w:'0%',c:'transparent',l:''},{w:'25%',c:'#ef4444',l:'😰 Rất yếu'},{w:'50%',c:'#f59e0b',l:'😐 Trung bình'},{w:'75%',c:'#3b82f6',l:'💪 Khá mạnh'},{w:'90%',c:'#22c55e',l:'🐍 Mạnh'},{w:'100%',c:'#86efac',l:'🔥 Cực mạnh!'}];
+  const l=lv[Math.min(s,5)];fill.style.width=l.w;fill.style.background=l.c;text.textContent=l.l;text.style.color=l.c;
+}
+
+async function doRegister(){
+  hideErr('reg-err');
+  const username=document.getElementById('r-user').value.trim();
+  const display=document.getElementById('r-name').value.trim();
+  const email=document.getElementById('r-email').value.trim();
+  const pass=document.getElementById('r-pass').value;
+  const pass2=document.getElementById('r-pass2').value;
+  const agreed=document.getElementById('r-agree').checked;
+  if(!username||!email||!pass){showErr('reg-err','Vui lòng điền đầy đủ (*).'); return;}
+  if(!/^[a-zA-Z0-9_]{3,32}$/.test(username)){showErr('reg-err','Username không hợp lệ.');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('reg-err','Email không hợp lệ.');return;}
+  if(pass.length<8){showErr('reg-err','Mật khẩu tối thiểu 8 ký tự.');return;}
+  if(pass!==pass2){showErr('reg-err','Mật khẩu không khớp.');return;}
+  if(!agreed){showErr('reg-err','Vui lòng đồng ý điều khoản.');return;}
+  const btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent='⏳ Đang gửi...';
+  try{
+    const {data:ex}=await _db.from('profiles').select('id').eq('username',username).maybeSingle();
+    if(ex){showErr('reg-err','Username đã được dùng.');return;}
+    const {data:exr}=await _db.from('signup_requests').select('id,status').eq('email',email).maybeSingle();
+    if(exr){showErr('reg-err',exr.status==='pending'?'Email đang chờ duyệt.':'Yêu cầu với email này đã bị từ chối.');return;}
+    const {error}=await _db.from('signup_requests').insert({email,username,display_name:display||username,password_hash:btoa(pass)});
+    if(error) throw error;
+    document.getElementById('reg-form').style.display='none';
+    document.getElementById('reg-success').style.display='block';
+  }catch(e){
+    showErr('reg-err','Lỗi gửi yêu cầu: '+e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='Gửi yêu cầu đăng ký';
+  }
 }
 
 // ============================================================
 // SELF PANEL
 // ============================================================
-function updateSelfPanel() {
-    const p = AppState.profile;
-    const name = p.display_name || p.username;
-    document.getElementById('selfName').textContent = name;
-    document.getElementById('selfStatus').textContent = `● ${p.status || 'online'}`;
-
-    const avatar = document.getElementById('selfAvatar');
-    if (p.avatar_url) {
-        avatar.innerHTML = `<img src="${p.avatar_url}" alt="">`;
-    } else {
-        avatar.textContent = name[0].toUpperCase();
-    }
+function updateSelfPanel(){
+  const p=S.profile,name=p.display_name||p.username;
+  document.getElementById('selfName').textContent=name;
+  document.getElementById('selfStatus').textContent=`● ${p.status||'online'}`;
+  const av=document.getElementById('selfAv');
+  av.innerHTML=p.avatar_url?`<img src="${p.avatar_url}" alt="">`:name[0].toUpperCase();
 }
 
 // ============================================================
 // SERVERS
 // ============================================================
-async function loadServers() {
-    const { data: memberships } = await supabase
-        .from('server_members')
-        .select('server_id, servers(*)')
-        .eq('user_id', AppState.user.id);
-
-    AppState.servers = memberships?.map(m => m.servers) || [];
-    renderServerList();
+async function loadServers(){
+  const {data}=await _db.from('server_members').select('server_id,servers(*)').eq('user_id',S.user.id);
+  S.servers=(data||[]).map(m=>m.servers).filter(Boolean);
+  renderServers();
 }
-
-function renderServerList() {
-    const list = document.getElementById('serverList');
-    list.innerHTML = AppState.servers.map(s => `
-        <div class="server-icon" data-id="${s.id}" onclick="selectServer('${s.id}')" data-tip="${s.name}">
-            ${s.icon_url ? `<img src="${s.icon_url}" style="width:48px;height:48px;border-radius:inherit;object-fit:cover">` : s.name[0].toUpperCase()}
-        </div>
-    `).join('');
+function renderServers(){
+  document.getElementById('serverList').innerHTML=S.servers.map(s=>`
+    <div class="srv-icon" data-id="${s.id}" onclick="selectServer('${s.id}')" title="${s.name}">
+      ${s.icon_url?`<img src="${s.icon_url}" style="width:48px;height:48px;border-radius:inherit;object-fit:cover">`:s.name[0].toUpperCase()}
+    </div>`).join('');
 }
-
-async function selectServer(serverId) {
-    const server = AppState.servers.find(s => s.id === serverId);
-    if (!server) return;
-
-    AppState.currentServer = server;
-    AppState.isBotChannel = false;
-
-    document.getElementById('sidebarTitle').textContent = server.name;
-    document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
-    document.querySelector(`[data-id="${serverId}"]`)?.classList.add('active');
-
-    await loadChannels(serverId);
-    await loadMembers(serverId);
-    renderDMChannels([]); // clear DMs from sidebar
+async function selectServer(id){
+  const s=S.servers.find(x=>x.id===id);if(!s)return;
+  S.currentServer=s;
+  document.getElementById('sbTitle').textContent=s.name;
+  document.querySelectorAll('.srv-icon').forEach(el=>el.classList.remove('active'));
+  document.querySelector(`[data-id="${id}"]`)?.classList.add('active');
+  await loadChannels(id);await loadMembers(id);
 }
-
-async function loadChannels(serverId) {
-    const { data } = await supabase
-        .from('channels')
-        .select('*')
-        .eq('server_id', serverId)
-        .order('position');
-
-    AppState.channels = data || [];
-    renderChannels();
+async function loadChannels(sid){
+  const {data}=await _db.from('channels').select('*').eq('server_id',sid).order('position');
+  S.channels=data||[];renderChannels();
 }
-
-function renderChannels() {
-    const list = document.getElementById('channelList');
-    const textChannels = AppState.channels.filter(c => c.type === 'text');
-    const announcements = AppState.channels.filter(c => c.type === 'announcement');
-
-    let html = '';
-
-    if (announcements.length) {
-        html += `<div class="channel-category">📢 Thông báo <span>+</span></div>`;
-        html += announcements.map(c => channelItem(c)).join('');
-    }
-
-    html += `<div class="channel-category">💬 Kênh văn bản <span onclick="showCreateChannel(event)">+</span></div>`;
-    html += textChannels.map(c => channelItem(c)).join('');
-
-    // Bot channel
-    html += `<div class="channel-category">🤖 Bot</div>`;
-    html += `<div class="channel-item" onclick="openBotChannel()">
-    <span class="channel-icon" style="display:flex;align-items:center">
-        <svg width="14" height="14" viewBox="0 0 80 80" fill="none" style="color:var(--accent)">
-            <path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
-            <path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
-        </svg>
-    </span>
-    <span class="channel-name">quýbot</span></div>`;
-
-    list.innerHTML = html;
+function renderChannels(){
+  const text=S.channels.filter(c=>c.type==='text'),ann=S.channels.filter(c=>c.type==='announcement');
+  let h='';
+  if(ann.length){h+=`<div class="ch-cat">📢 Thông báo</div>`;h+=ann.map(chItem).join('');}
+  h+=`<div class="ch-cat">💬 Kênh văn bản <span onclick="showCreateChannel(event)" style="cursor:pointer;font-size:16px">+</span></div>`;
+  h+=text.map(chItem).join('');
+  h+=`<div class="ch-cat">🤖 Bot</div><div class="ch-item" onclick="openBotCh()"><span class="ch-ico">🐍</span><span class="ch-name">quýbot</span></div>`;
+  document.getElementById('chList').innerHTML=h;
 }
-
-function channelItem(c) {
-    const icons = { text: '#', announcement: '📢', voice: '🔊' };
-    return `
-        <div class="channel-item" id="ch_${c.id}" onclick="selectChannel('${c.id}')">
-            <span class="channel-icon">${icons[c.type] || '#'}</span>
-            <span class="channel-name">${c.name}</span>
-        </div>
-    `;
-}
-
-async function selectChannel(channelId) {
-    const channel = AppState.channels.find(c => c.id === channelId);
-    if (!channel) return;
-
-    AppState.currentChannel = channel;
-    AppState.isBotChannel = false;
-
-    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
-    document.getElementById(`ch_${channelId}`)?.classList.add('active');
-
-    document.getElementById('chatIcon').textContent = '#';
-    document.getElementById('chatName').textContent = channel.name;
-    document.getElementById('chatTopic').textContent = channel.topic || '';
-    document.getElementById('botModeBar').classList.remove('show');
-
-    showChatView();
-    await loadMessages(channelId);
-    subscribeChannel(channelId);
+function chItem(c){return`<div class="ch-item" id="ch_${c.id}" onclick="selectCh('${c.id}')"><span class="ch-ico">${c.type==='announcement'?'📢':'#'}</span><span class="ch-name">${c.name}</span></div>`;}
+async function selectCh(id){
+  const ch=S.channels.find(c=>c.id===id);if(!ch)return;
+  S.currentChannel=ch;S.isBot=false;
+  document.querySelectorAll('.ch-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`ch_${id}`)?.classList.add('active');
+  document.getElementById('chatIco').textContent='#';
+  document.getElementById('chatName').textContent=ch.name;
+  document.getElementById('chatTopic').textContent=ch.topic||'';
+  document.getElementById('botBar').classList.remove('show');
+  showChat();await loadMsgs(id);subCh(id);
 }
 
 // ============================================================
 // DMs
 // ============================================================
-async function loadDMs() {
-    const { data } = await supabase
-        .from('dm_participants')
-        .select('channel_id, channels!inner(*), profiles!dm_participants_user_id_fkey(*)')
-        .eq('user_id', AppState.user.id)
-        .eq('channels.is_dm', true);
-
-    // Get other participants
-    const dms = [];
-    if (data) {
-        for (const dm of data) {
-            const { data: participants } = await supabase
-                .from('dm_participants')
-                .select('profiles(*)')
-                .eq('channel_id', dm.channel_id)
-                .neq('user_id', AppState.user.id);
-
-            if (participants?.length) {
-                dms.push({ channel: dm.channels, other: participants[0].profiles });
-            }
-        }
-    }
-
-    renderDMChannels(dms);
+async function loadDMs(){
+  const {data}=await _db.from('dm_participants').select('channel_id,channels!inner(*)').eq('user_id',S.user.id).eq('channels.is_dm',true);
+  const dms=[];
+  for(const dm of data||[]){
+    const {data:others}=await _db.from('dm_participants').select('profiles(*)').eq('channel_id',dm.channel_id).neq('user_id',S.user.id);
+    if(others?.length) dms.push({channel:dm.channels,other:others[0].profiles});
+  }
+  renderDMs(dms);
 }
-
-function renderDMChannels(dms) {
-    const list = document.getElementById('channelList');
-    const dmHtml = dms.map(dm => {
-        const name = dm.other?.display_name || dm.other?.username || 'Unknown';
-        return `
-            <div class="channel-item" onclick="selectDM('${dm.channel.id}', '${name}', '${dm.other?.status || 'offline'}')">
-                <div class="avatar avatar-32" style="margin-right:0">
-                    ${dm.other?.avatar_url ? `<img src="${dm.other.avatar_url}">` : name[0]}
-                    <span class="status-dot ${dm.other?.status || 'offline'}"></span>
-                </div>
-                <span class="channel-name">${name}</span>
-            </div>
-        `;
-    }).join('');
-
-    list.innerHTML = `
-        <div class="channel-category">💌 Tin nhắn trực tiếp</div>
-        ${dmHtml}
-        <div class="channel-item" onclick="showNewDM()" style="color:var(--accent)">
-            <span class="channel-icon">+</span>
-            <span class="channel-name">Nhắn tin mới</span>
-        </div>
-    `;
+function renderDMs(dms){
+  const h=dms.map(dm=>{
+    const name=dm.other?.display_name||dm.other?.username||'?';
+    return`<div class="ch-item" onclick="selectDM('${dm.channel.id}','${name}','${dm.other?.status||'offline'}')">
+      <div class="avatar av32" style="margin-right:0">${dm.other?.avatar_url?`<img src="${dm.other.avatar_url}">`:name[0]}<span class="status-dot ${dm.other?.status||'offline'}"></span></div>
+      <span class="ch-name">${name}</span></div>`;
+  }).join('');
+  document.getElementById('chList').innerHTML=`<div class="ch-cat">💌 Tin nhắn trực tiếp</div>${h}<div class="ch-item" onclick="showNewDM()" style="color:var(--accent)"><span class="ch-ico">+</span><span class="ch-name">Nhắn tin mới</span></div>`;
 }
-
-function switchView(view) {
-    if (view === 'home') {
-        AppState.currentServer = null;
-        document.getElementById('sidebarTitle').textContent = 'TeamQuyTran';
-        document.querySelectorAll('.server-icon').forEach(el => el.classList.remove('active'));
-        document.getElementById('homeBtn').classList.add('active');
-        loadDMs();
-        document.getElementById('membersList').innerHTML = '';
-    }
+function switchView(v){
+  if(v==='home'){
+    S.currentServer=null;
+    document.getElementById('sbTitle').textContent='TeamQuyTran';
+    document.querySelectorAll('.srv-icon').forEach(el=>el.classList.remove('active'));
+    document.getElementById('homeBtn').classList.add('active');
+    loadDMs();document.getElementById('mbList').innerHTML='';
+  }
 }
 
 // ============================================================
-// BOT CHANNEL
+// BOT
 // ============================================================
-function openBotChannel() {
-    AppState.isBotChannel = true;
-    AppState.currentChannel = { id: 'bot', name: 'quýbot' };
-
-    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
-
-    document.getElementById('chatIcon').innerHTML = '<svg width="16" height="16" viewBox="0 0 80 80" fill="none" style="color:var(--accent)"><path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>';
-    document.getElementById('chatName').textContent = 'QuýBot';
-    document.getElementById('chatTopic').textContent = 'Chat với QuýBot — Hỗ trợ ảnh, txt, pdf';
-    document.getElementById('botModeBar').classList.add('show');
-    document.getElementById('msgInput').placeholder = 'Hỏi QuýBot gì đó...';
-
-    showChatView();
-
-    // Load bot history from localStorage
-    const history = LocalCache.getMessages('bot');
-    renderMessages(history, false);
+function openBotCh(){
+  S.isBot=true;S.currentChannel={id:'bot',name:'quýbot'};
+  document.querySelectorAll('.ch-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('chatIco').textContent='🐍';
+  document.getElementById('chatName').textContent='QuýBot';
+  document.getElementById('chatTopic').textContent='Chat riêng với QuýBot';
+  document.getElementById('botBar').classList.add('show');
+  document.getElementById('msgInp').placeholder='Hỏi QuýBot gì đó...';
+  showChat();renderMsgs(LC.get('bot'),false);
 }
-
-function setBotMode(mode, btn) {
-    QuýBot.setMode(mode);
-    document.querySelectorAll('.bot-mode-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    Toast.info(`QuýBot: Chế độ ${btn.textContent.trim()}`);
+function setBotMode(m,btn){
+  Bot.setMode(m);
+  document.querySelectorAll('.bot-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');T.info(`QuýBot: chế độ ${btn.textContent.trim()}`);
 }
 
 // ============================================================
 // MEMBERS
 // ============================================================
-async function loadMembers(serverId) {
-    const { data } = await supabase
-        .from('server_members')
-        .select('*, profiles(*)')
-        .eq('server_id', serverId);
-
-    AppState.members = data || [];
-    renderMembers();
+async function loadMembers(sid){
+  const {data}=await _db.from('server_members').select('*,profiles(*)').eq('server_id',sid);
+  S.members=data||[];renderMembers();
 }
-
-function renderMembers() {
-    const online = AppState.members.filter(m => m.profiles?.status !== 'offline');
-    const offline = AppState.members.filter(m => m.profiles?.status === 'offline');
-
-    const memberHtml = (members, title) => {
-        if (!members.length) return '';
-        return `
-            <div class="members-section-title">${title} — ${members.length}</div>
-            ${members.map(m => {
-                const p = m.profiles;
-                const name = p?.display_name || p?.username || 'Unknown';
-                return `
-                    <div class="member-item" onclick="showUserProfile('${p?.id}')">
-                        <div class="avatar avatar-32">
-                            ${p?.avatar_url ? `<img src="${p.avatar_url}">` : name[0]}
-                            <span class="status-dot ${p?.status || 'offline'}"></span>
-                        </div>
-                        <div>
-                            <div class="member-name">${name}</div>
-                            ${m.role !== 'user' ? `<div class="text-xs"><span class="badge badge-${m.role}">${m.role}</span></div>` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('')}
-        `;
-    };
-
-    document.getElementById('membersList').innerHTML =
-        memberHtml(online, '🟢 Online') +
-        memberHtml(offline, '○ Offline');
+function renderMembers(){
+  const online=S.members.filter(m=>m.profiles?.status!=='offline');
+  const offline=S.members.filter(m=>m.profiles?.status==='offline');
+  const sec=(ms,title)=>{
+    if(!ms.length) return '';
+    return`<div class="mb-title">${title} — ${ms.length}</div>`+ms.map(m=>{
+      const p=m.profiles||{},name=p.display_name||p.username||'?';
+      return`<div class="mb-item" onclick="showProfile('${p.id}')">
+        <div class="avatar av32">${p.avatar_url?`<img src="${p.avatar_url}">`:name[0]}<span class="status-dot ${p.status||'offline'}"></span></div>
+        <div><div class="mb-name">${name}</div>${m.role&&m.role!=='user'?`<span class="badge badge-${m.role}">${m.role}</span>`:''}</div></div>`;
+    }).join('');
+  };
+  document.getElementById('mbList').innerHTML=sec(online,'🟢 Online')+sec(offline,'○ Offline');
 }
-
-function toggleMembers() {
-    AppState.membersVisible = !AppState.membersVisible;
-    document.getElementById('app').classList.toggle('no-members', !AppState.membersVisible);
-}
+function toggleMembers(){S.mbVisible=!S.mbVisible;document.getElementById('page-app').classList.toggle('no-mb',!S.mbVisible);}
 
 // ============================================================
 // MESSAGES
 // ============================================================
-async function loadMessages(channelId) {
-    // First load from local cache for instant display
-    const cached = LocalCache.getMessages(channelId);
-    if (cached.length) renderMessages(cached, false);
-
-    // Then fetch from Supabase
-    const { data } = await supabase
-        .from('messages')
-        .select('*, profiles(*), reply:reply_to(id, content, profiles(username))')
-        .eq('channel_id', channelId)
-        .order('created_at', { ascending: true })
-        .limit(50);
-
-    if (data) {
-        LocalCache.setMessages(channelId, data);
-        renderMessages(data, true);
-        scrollToBottom();
-    }
+async function loadMsgs(chId){
+  const cached=LC.get(chId);if(cached.length) renderMsgs(cached,false);
+  const {data}=await _db.from('messages').select('*,profiles(*),reply:reply_to(id,content,profiles(username))').eq('channel_id',chId).order('created_at',{ascending:true}).limit(50);
+  if(data){LC.set(chId,data);renderMsgs(data,true);scrollBottom();}
 }
-
-function renderMessages(messages, scroll = true) {
-    const list = document.getElementById('messagesList');
-    if (!messages.length) {
-        list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-faint)">
-            Chưa có tin nhắn nào. Hãy bắt đầu!
-        </div>`;
-        return;
+function renderMsgs(msgs,scroll=true){
+  const list=document.getElementById('msgsList');
+  if(!msgs.length){list.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text-faint)">Chưa có tin nhắn. Bắt đầu đi! 🐍</div>`;return;}
+  let h='',lastA=null,lastD=null;
+  msgs.forEach((m,i)=>{
+    const md=new Date(m.created_at).toDateString();
+    if(md!==lastD){
+      h+=`<div class="date-div">${new Date(m.created_at).toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>`;
+      lastD=md;lastA=null;
     }
-
-    let html = '';
-    let lastAuthorId = null;
-    let lastDate = null;
-
-    messages.forEach((msg, i) => {
-        const msgDate = new Date(msg.created_at).toDateString();
-        if (msgDate !== lastDate) {
-            html += `<div class="date-divider">${new Date(msg.created_at).toLocaleDateString('vi-VN', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}</div>`;
-            lastDate = msgDate;
-            lastAuthorId = null;
-        }
-
-        const timeDiff = i > 0 ? (new Date(msg.created_at) - new Date(messages[i-1].created_at)) / 1000 : 999;
-        const continued = msg.author_id === lastAuthorId && timeDiff < 300 && !msg.reply_to;
-
-        html += renderMessage(msg, continued);
-        lastAuthorId = msg.author_id;
-    });
-
-    list.innerHTML = html;
-
-    // Attach spoiler handlers
-    list.querySelectorAll('.spoiler').forEach(el => {
-        el.addEventListener('click', () => el.classList.toggle('revealed'));
-    });
-
-    if (scroll) scrollToBottom();
+    const td=i>0?(new Date(m.created_at)-new Date(msgs[i-1].created_at))/1000:999;
+    h+=renderMsg(m,m.author_id===lastA&&td<300&&!m.reply_to);
+    lastA=m.author_id;
+  });
+  list.innerHTML=h;
+  list.querySelectorAll('.spoiler').forEach(el=>el.addEventListener('click',()=>el.classList.toggle('revealed')));
+  if(scroll) scrollBottom();
 }
-
-function renderMessage(msg, continued = false) {
-    const p = msg.profiles || {};
-    const name = p.display_name || p.username || (msg.is_bot ? 'QuýBot' : 'Unknown');
-    const role = msg.is_bot ? 'bot' : (p.role || 'user');
-    const avatarContent = p.avatar_url ? `<img src="${p.avatar_url}" alt="">` : name[0].toUpperCase();
-
-    const replyHtml = msg.reply ? `
-        <div class="reply-preview" onclick="scrollToMessage('${msg.reply.id}')">
-            <span>↩</span>
-            <strong>${msg.reply.profiles?.username || 'Unknown'}:</strong>
-            <span>${(msg.reply.content || '').slice(0, 60)}${msg.reply.content?.length > 60 ? '...' : ''}</span>
-        </div>
-    ` : '';
-
-    const attachmentsHtml = (msg.attachments || []).map(att => {
-        if (att.type === 'image') {
-            return `<img class="msg-image" src="${att.url}" alt="${att.name}" onclick="openLightbox('${att.url}')">`;
-        }
-        return `<div class="msg-file" onclick="window.open('${att.url}')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> <span>${att.name}</span>
-        </div>`;
-    }).join('');
-
-    const isSelf = msg.author_id === AppState.user?.id;
-
-    return `
-        <div class="msg-group ${continued ? 'continued' : ''}" id="msg_${msg.id}" data-id="${msg.id}">
-            <div class="msg-avatar">
-                <div class="avatar avatar-40" onclick="showUserProfile('${p.id}')">${avatarContent}</div>
-            </div>
-            <div class="msg-body">
-                ${replyHtml}
-                <div class="msg-header">
-                    <span class="msg-author ${role}" onclick="showUserProfile('${p.id}')">${name}</span>
-                    ${role !== 'user' ? `<span class="badge badge-${role === 'bot' ? 'bot' : role}">${role === 'bot' ? 'BOT' : role.toUpperCase()}</span>` : ''}
-                    <span class="msg-time">${TimeUtil.format(msg.created_at)}</span>
-                    ${msg.edited ? `<span class="msg-edited">(đã chỉnh sửa)</span>` : ''}
-                </div>
-                <div class="msg-content ${msg.type === 'system' ? 'muted' : ''}">${MD.render(msg.content || '')}</div>
-                ${attachmentsHtml ? `<div class="msg-attachments">${attachmentsHtml}</div>` : ''}
-                ${renderReactions(msg)}
-            </div>
-            <div class="msg-actions">
-                <button class="action-btn" onclick="addReaction('${msg.id}')" data-tip="React"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
-                <button class="action-btn" onclick="replyTo('${msg.id}', '${name}')" data-tip="Trả lời"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>
-                ${isSelf ? `<button class="action-btn" onclick="editMessage('${msg.id}')" data-tip="Chỉnh sửa"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
-                ${(isSelf || ['admin','moderator'].includes(AppState.profile?.role)) ? `<button class="action-btn danger" onclick="deleteMessage('${msg.id}')" data-tip="Xóa"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
-                <button class="action-btn" onclick="pinMessage('${msg.id}')" data-tip="Ghim"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v3.76z"/></svg></button>
-            </div>
-        </div>
-    `;
+function renderMsg(m,cont=false){
+  const p=m.profiles||{},name=p.display_name||p.username||(m.is_bot?'QuýBot':'?');
+  const role=m.is_bot?'bot':(p.role||'user');
+  const isSelf=m.author_id===S.user?.id;
+  const canDel=isSelf||['admin','moderator'].includes(S.profile?.role);
+  const av=p.avatar_url?`<img src="${p.avatar_url}" alt="">`:name[0].toUpperCase();
+  const replyH=m.reply?`<div class="reply-prev" onclick="scrollToMsg('${m.reply.id}')">↩ <strong>${m.reply.profiles?.username||'?'}:</strong> <span>${(m.reply.content||'').slice(0,60)}${(m.reply.content?.length||0)>60?'...':''}</span></div>`:'';
+  const attH=(m.attachments||[]).map(a=>a.type==='image'?`<img class="msg-img" src="${a.url}" alt="${a.name}" onclick="openLbox('${a.url}')">`:
+    `<div class="msg-file" onclick="window.open('${a.url}')">📄 ${a.name}</div>`).join('');
+  return`<div class="msg-g ${cont?'cont':''}" id="msg_${m.id}" data-id="${m.id}">
+    <div class="msg-av"><div class="avatar av40" onclick="showProfile('${p.id}')">${av}</div></div>
+    <div class="msg-body">
+      ${replyH}
+      <div class="msg-hdr">
+        <span class="msg-author ${role}" onclick="showProfile('${p.id}')">${name}</span>
+        ${role!=='user'?`<span class="badge badge-${role}">${role==='bot'?'BOT':role.toUpperCase()}</span>`:''}
+        <span class="msg-time">${TU.fmt(m.created_at)}</span>
+        ${m.edited?'<span style="font-size:10px;color:var(--text-faint)">(đã sửa)</span>':''}
+      </div>
+      <div class="msg-content ${m.type==='system'?'muted':''}">${MD.r(m.content||'')}</div>
+      ${attH?`<div class="msg-atts">${attH}</div>`:''}
+    </div>
+    <div class="msg-acts">
+      <button class="act-btn" onclick="addReact('${m.id}')">😊</button>
+      <button class="act-btn" onclick="replyTo('${m.id}','${name.replace(/'/g,"\\'")}')" title="Trả lời">↩</button>
+      ${isSelf?`<button class="act-btn" onclick="editMsg('${m.id}')" title="Sửa">✏</button>`:''}
+      ${canDel?`<button class="act-btn del" onclick="delMsg('${m.id}')" title="Xóa">🗑</button>`:''}
+    </div>
+  </div>`;
 }
-
-function renderReactions(msg) {
-    if (!msg.reactions_summary) return '';
-    // Simplified - would come from aggregated query
-    return '';
-}
-
-function appendMessage(msg) {
-    const list = document.getElementById('messagesList');
-    const temp = document.createElement('div');
-    temp.innerHTML = renderMessage(msg, false);
-    const el = temp.firstElementChild;
-    list.appendChild(el);
-
-    // Spoiler handlers for new message
-    el.querySelectorAll('.spoiler').forEach(s => s.addEventListener('click', () => s.classList.toggle('revealed')));
-
-    const container = document.getElementById('messages-container');
-    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-    if (atBottom) scrollToBottom();
-    else {
-        document.getElementById('scrollToBottom').classList.add('show');
-    }
-
-    // Cache locally
-    if (AppState.currentChannel?.id) {
-        LocalCache.appendMessage(AppState.currentChannel.id, msg);
-    }
+function appendMsg(m){
+  const list=document.getElementById('msgsList');
+  const t=document.createElement('div');t.innerHTML=renderMsg(m,false);
+  const el=t.firstElementChild;list.appendChild(el);
+  el.querySelectorAll('.spoiler').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('revealed')));
+  const c=document.getElementById('msgs-cnt');
+  if(c.scrollHeight-c.scrollTop-c.clientHeight<100) scrollBottom();
+  else document.getElementById('stb').classList.add('show');
+  if(S.currentChannel?.id) LC.push(S.currentChannel.id,m);
 }
 
 // ============================================================
 // SEND MESSAGE
 // ============================================================
-async function sendMessage() {
-    if (AppState.isBotChannel) { await sendBotMessage(); return; }
-    if (!AppState.currentChannel) return;
-
-    const input = document.getElementById('msgInput');
-    const content = input.value.trim();
-    const attachments = [...AppState.pendingAttachments];
-
-    if (!content && !attachments.length) return;
-
-    input.value = '';
-    input.style.height = 'auto';
-    clearAttachments();
-
-    const msgData = {
-        channel_id: AppState.currentChannel.id,
-        author_id: AppState.user.id,
-        content: content || null,
-        type: 'text',
-        attachments: attachments,
-        reply_to: AppState.replyTo?.id || null,
-    };
-
-    cancelReply();
-
-    // Optimistic UI
-    const optimistic = {
-        ...msgData,
-        id: `opt_${Date.now()}`,
-        created_at: new Date().toISOString(),
-        profiles: AppState.profile,
-    };
-    appendMessage(optimistic);
-
-    // Send to Supabase
-    const { data, error } = await db().from('messages').insert(msgData).select('*, profiles(*)').single();
-    if (error) {
-        Toast.error('Gửi tin nhắn thất bại.');
-        document.getElementById(`msg_opt_${Date.now()}`)?.remove();
-    }
+async function sendMessage(){
+  if(S.isBot){await sendBotMsg();return;}
+  if(!S.currentChannel) return;
+  const inp=document.getElementById('msgInp');
+  const content=inp.value.trim(),atts=[...S.atts];
+  if(!content&&!atts.length) return;
+  inp.value='';inp.style.height='auto';clearAtts();
+  const msgData={channel_id:S.currentChannel.id,author_id:S.user.id,content:content||null,type:'text',attachments:atts,reply_to:S.replyTo?.id||null};
+  cancelReply();
+  appendMsg({...msgData,id:`opt_${Date.now()}`,created_at:new Date().toISOString(),profiles:S.profile});
+  const {error}=await _db.from('messages').insert(msgData);
+  if(error) T.error('Gửi thất bại: '+error.message);
 }
-
-async function sendBotMessage() {
-    const input = document.getElementById('msgInput');
-    const content = input.value.trim();
-    const attachments = [...AppState.pendingAttachments];
-
-    if (!content && !attachments.length) return;
-
-    input.value = '';
-    input.style.height = 'auto';
-    clearAttachments();
-
-    // Show user message
-    const userMsg = {
-        id: `usr_${Date.now()}`,
-        content,
-        created_at: new Date().toISOString(),
-        profiles: AppState.profile,
-        is_bot: false,
-        attachments,
-    };
-    appendMessage(userMsg);
-    LocalCache.appendMessage('bot', userMsg);
-
-    // Show thinking
-    const thinkId = `think_${Date.now()}`;
-    const list = document.getElementById('messagesList');
-    list.insertAdjacentHTML('beforeend', `
-        <div id="${thinkId}" class="bot-thinking">
-            <div class="avatar avatar-40" style="overflow:visible"><svg width="24" height="24" viewBox="0 0 80 80" fill="none" style="color:var(--accent)"><path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></div>
-            <div><div class="msg-author bot">QuýBot</div>
-            <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
-        </div>
-    `);
-    scrollToBottom();
-
-    try {
-        // Process attachments for bot
-        const processedAtts = [];
-        for (const att of attachments) {
-            if (att.rawFile) {
-                const processed = await QuýBot.processFile(att.rawFile);
-                processedAtts.push(processed);
-            }
-        }
-
-        const reply = await QuýBot.sendMessage(content, processedAtts);
-
-        document.getElementById(thinkId)?.remove();
-
-        const botMsg = {
-            id: `bot_${Date.now()}`,
-            content: reply,
-            created_at: new Date().toISOString(),
-            profiles: { display_name: 'QuýBot', username: 'quybot', role: 'bot' },
-            is_bot: true,
-        };
-        appendMessage(botMsg);
-        LocalCache.appendMessage('bot', botMsg);
-
-    } catch (e) {
-        document.getElementById(thinkId)?.remove();
-        const errMsg = {
-            id: `err_${Date.now()}`,
-            content: 'QuýBot không phản hồi được. Kiểm tra GROQ API key.',
-            created_at: new Date().toISOString(),
-            profiles: { display_name: 'QuýBot', username: 'quybot', role: 'bot' },
-            is_bot: true,
-        };
-        appendMessage(errMsg);
-    }
+async function sendBotMsg(){
+  const inp=document.getElementById('msgInp');
+  const content=inp.value.trim(),atts=[...S.atts];
+  if(!content&&!atts.length) return;
+  inp.value='';inp.style.height='auto';clearAtts();
+  appendMsg({id:`u_${Date.now()}`,content,created_at:new Date().toISOString(),profiles:S.profile,is_bot:false,attachments:atts});
+  LC.push('bot',{id:`u_${Date.now()}`,content,created_at:new Date().toISOString(),profiles:S.profile});
+  const tid=`t_${Date.now()}`;
+  document.getElementById('msgsList').insertAdjacentHTML('beforeend',
+    `<div id="${tid}" class="bot-think"><div class="avatar av40">🐍</div><div><div class="msg-author bot">QuýBot</div><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>`);
+  scrollBottom();
+  try{
+    const procs=[];
+    for(const a of atts){if(a.rawFile) procs.push(await Bot.processFile(a.rawFile));}
+    const reply=await Bot.send(content,procs);
+    document.getElementById(tid)?.remove();
+    const bm={id:`b_${Date.now()}`,content:reply,created_at:new Date().toISOString(),profiles:{display_name:'QuýBot',username:'quybot',role:'bot'},is_bot:true};
+    appendMsg(bm);LC.push('bot',bm);
+  }catch(e){
+    document.getElementById(tid)?.remove();
+    appendMsg({id:`e_${Date.now()}`,content:`❌ ${e.message}`,created_at:new Date().toISOString(),profiles:{display_name:'QuýBot',username:'quybot',role:'bot'},is_bot:true});
+  }
 }
 
 // ============================================================
 // INPUT HELPERS
 // ============================================================
-function handleInputKeydown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
+function onMsgKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+function resizeInp(t){t.style.height='auto';t.style.height=Math.min(t.scrollHeight,160)+'px';}
+let typTimer;
+function sendTyping(){clearTimeout(typTimer);typTimer=setTimeout(()=>{},2000);}
+function replyTo(id,name){
+  S.replyTo={id,name};
+  const b=document.getElementById('replyBar');b.classList.add('show');
+  document.getElementById('replyWho').textContent=name;
+  document.getElementById('msgInp').focus();
 }
-
-function handleInputResize(textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
-}
-
-let typingTimer;
-async function sendTyping() {
-    if (!AppState.currentChannel || AppState.isBotChannel) return;
-    clearTimeout(typingTimer);
-    // Use Supabase presence or broadcast
-    const channel = db().channel(`typing_${AppState.currentChannel.id}`);
-    await channel.send({ type: 'broadcast', event: 'typing', payload: { userId: AppState.user.id, username: AppState.profile.username } });
-    typingTimer = setTimeout(() => {}, 2000);
-}
-
-function replyTo(msgId, authorName) {
-    AppState.replyTo = { id: msgId, name: authorName };
-    const bar = document.getElementById('replyBar');
-    bar.classList.add('show');
-    bar.querySelector('strong').textContent = authorName;
-    document.getElementById('msgInput').focus();
-}
-
-function cancelReply() {
-    AppState.replyTo = null;
-    document.getElementById('replyBar').classList.remove('show');
-}
+function cancelReply(){S.replyTo=null;document.getElementById('replyBar').classList.remove('show');}
 
 // ============================================================
 // FILE ATTACHMENTS
 // ============================================================
-function triggerFileUpload() {
-    document.getElementById('fileInput').click();
+async function onFileSelect(e){
+  const allowed=['image/png','image/jpeg','image/gif','image/webp','text/plain','application/pdf'];
+  for(const file of Array.from(e.target.files)){
+    if(file.size>8*1024*1024){T.error(`${file.name} quá lớn (max 8MB)`);continue;}
+    if(!allowed.includes(file.type)){T.error(`${file.name}: không hỗ trợ`);continue;}
+    const att={name:file.name,type:file.type.startsWith('image/')?'image':'file',rawFile:file};
+    if(att.type==='image'){
+      const r=new FileReader();
+      r.onload=async ev=>{
+        att.preview=ev.target.result;att.url=ev.target.result;
+        try{
+          const ext=file.name.split('.').pop();
+          const path=`uploads/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const {error}=await _db.storage.from('attachments').upload(path,file);
+          if(!error){const {data:{publicUrl}}=_db.storage.from('attachments').getPublicUrl(path);att.url=publicUrl;}
+        }catch{}
+        addAttPrev(att);
+      };
+      r.readAsDataURL(file);
+    }else{att.url=URL.createObjectURL(file);addAttPrev(att);}
+    S.atts.push(att);
+  }
+  e.target.value='';
 }
-
-async function handleFileSelect(e) {
-    const files = Array.from(e.target.files);
-    for (const file of files) {
-        if (file.size > TQT.MAX_FILE_SIZE) { Toast.error(`${file.name} quá lớn (max 8MB)`); continue; }
-        if (!TQT.ALLOWED_FILE_TYPES.includes(file.type)) { Toast.error(`${file.name}: loại file không hỗ trợ`); continue; }
-
-        const att = { name: file.name, type: file.type.startsWith('image/') ? 'image' : 'file', rawFile: file };
-
-        if (att.type === 'image') {
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                att.preview = ev.target.result;
-                try {
-                    att.url = await Uploader.upload(file);
-                } catch(err) {
-                    att.url = ev.target.result; // fallback to data URL
-                }
-                addAttachmentPreview(att);
-            };
-            reader.readAsDataURL(file);
-        } else {
-            att.url = URL.createObjectURL(file);
-            addAttachmentPreview(att);
-        }
-
-        AppState.pendingAttachments.push(att);
-    }
-    e.target.value = '';
+function addAttPrev(att){
+  const p=document.getElementById('attPrev');p.classList.add('show');
+  const idx=S.atts.indexOf(att);
+  const t=document.createElement('div');t.className='att-thumb';t.id=`att_${idx}`;
+  t.innerHTML=att.type==='image'
+    ?`<img src="${att.preview||att.url}"><span style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${att.name}</span><button class="att-rm" onclick="rmAtt(${idx})">✕</button>`
+    :`📄 <span style="overflow:hidden;text-overflow:ellipsis">${att.name}</span><button class="att-rm" onclick="rmAtt(${idx})">✕</button>`;
+  p.appendChild(t);
 }
-
-function addAttachmentPreview(att) {
-    const preview = document.getElementById('attachmentPreview');
-    preview.classList.add('show');
-
-    const idx = AppState.pendingAttachments.indexOf(att);
-    const thumb = document.createElement('div');
-    thumb.className = 'att-thumb';
-    thumb.id = `att_${idx}`;
-    thumb.innerHTML = att.type === 'image'
-        ? `<img src="${att.preview || att.url}"><span class="truncate" style="max-width:120px">${att.name}</span><button class="att-remove" onclick="removeAttachment(${idx})">✕</button>`
-        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> <span class="truncate">${att.name}</span><button class="att-remove" onclick="removeAttachment(${idx})">✕</button>`;
-
-    preview.appendChild(thumb);
-}
-
-function removeAttachment(idx) {
-    AppState.pendingAttachments.splice(idx, 1);
-    document.getElementById(`att_${idx}`)?.remove();
-    if (!AppState.pendingAttachments.length) {
-        document.getElementById('attachmentPreview').classList.remove('show');
-    }
-}
-
-function clearAttachments() {
-    AppState.pendingAttachments = [];
-    const preview = document.getElementById('attachmentPreview');
-    preview.innerHTML = '';
-    preview.classList.remove('show');
-}
+function rmAtt(idx){S.atts.splice(idx,1);document.getElementById(`att_${idx}`)?.remove();if(!S.atts.length)document.getElementById('attPrev').classList.remove('show');}
+function clearAtts(){S.atts=[];const p=document.getElementById('attPrev');p.innerHTML='';p.classList.remove('show');}
 
 // ============================================================
 // MESSAGE ACTIONS
 // ============================================================
-async function deleteMessage(msgId) {
-    if (!confirm('Xóa tin nhắn này?')) return;
-    const { error } = await db().from('messages').delete().eq('id', msgId);
-    if (!error) {
-        document.getElementById(`msg_${msgId}`)?.remove();
-    }
+async function delMsg(id){
+  if(!confirm('Xóa tin nhắn này?')) return;
+  const {error}=await _db.from('messages').delete().eq('id',id);
+  if(!error) document.getElementById(`msg_${id}`)?.remove();
+  else T.error('Không xóa được: '+error.message);
 }
-
-async function editMessage(msgId) {
-    const el = document.getElementById(`msg_${msgId}`);
-    if (!el) return;
-    const content = el.querySelector('.msg-content');
-    const current = content.getAttribute('data-raw') || content.textContent;
-
-    const newContent = prompt('Chỉnh sửa tin nhắn:', current);
-    if (!newContent || newContent === current) return;
-
-    const { error } = await db().from('messages')
-        .update({ content: newContent, edited: true, edited_at: new Date().toISOString() })
-        .eq('id', msgId);
-
-    if (!error) {
-        content.innerHTML = MD.render(newContent);
-    }
+async function editMsg(id){
+  const el=document.getElementById(`msg_${id}`);if(!el) return;
+  const cur=el.querySelector('.msg-content').textContent;
+  const n=prompt('Chỉnh sửa:',cur);
+  if(!n||n===cur) return;
+  const {error}=await _db.from('messages').update({content:n,edited:true,edited_at:new Date().toISOString()}).eq('id',id);
+  if(!error) el.querySelector('.msg-content').innerHTML=MD.r(n);
 }
-
-async function pinMessage(msgId) {
-    const { error } = await db().from('messages').update({ pinned: true }).eq('id', msgId);
-    if (!error) Toast.success('Đã ghim tin nhắn');
+function addReact(id){
+  const emojis=['👍','❤️','🐍','😂','😮','😢','🔥','💯'];
+  const pk=document.createElement('div');pk.className='ctx-menu';pk.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);z-index:5000';
+  pk.innerHTML=`<div style="display:flex;gap:4px;padding:4px">${emojis.map(e=>`<span style="font-size:20px;cursor:pointer;padding:4px;border-radius:4px" onclick="doReact('${id}','${e}');this.closest('.ctx-menu').remove()">${e}</span>`).join('')}</div>`;
+  document.body.appendChild(pk);
+  setTimeout(()=>document.addEventListener('click',()=>pk.remove(),{once:true}),0);
 }
-
-function addReaction(msgId) {
-    const emojis = ['👍','❤️','🐍','😂','😮','😢','🔥','💯'];
-    const picker = document.createElement('div');
-    picker.className = 'ctx-menu';
-    picker.style.cssText = `bottom:40px;left:50%`;
-    picker.innerHTML = `<div style="display:flex;gap:4px;padding:4px">${emojis.map(e => `<span style="font-size:20px;cursor:pointer;padding:4px;border-radius:4px" onclick="doReaction('${msgId}','${e}')">${e}</span>`).join('')}</div>`;
-    document.body.appendChild(picker);
-    setTimeout(() => document.addEventListener('click', () => picker.remove(), { once: true }), 0);
-}
-
-async function doReaction(msgId, emoji) {
-    await db().from('reactions').upsert({ message_id: msgId, user_id: AppState.user.id, emoji });
-}
+async function doReact(msgId,emoji){await _db.from('reactions').upsert({message_id:msgId,user_id:S.user.id,emoji});}
 
 // ============================================================
 // REALTIME
 // ============================================================
-function subscribeChannel(channelId) {
-    // Unsubscribe previous
-    AppState.realtimeSubs.forEach(s => s.unsubscribe());
-    AppState.realtimeSubs = [];
-
-    const sub = db().channel(`msgs_${channelId}`)
-        .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `channel_id=eq.${channelId}`
-        }, async (payload) => {
-            // Fetch with profile
-            const { data } = await supabase
-                .from('messages')
-                .select('*, profiles(*)')
-                .eq('id', payload.new.id)
-                .single();
-
-            if (data && data.author_id !== AppState.user.id) {
-                appendMessage(data);
-            }
-        })
-        .on('postgres_changes', {
-            event: 'DELETE',
-            schema: 'public',
-            table: 'messages',
-            filter: `channel_id=eq.${channelId}`
-        }, (payload) => {
-            document.getElementById(`msg_${payload.old.id}`)?.remove();
-        })
-        .subscribe();
-
-    AppState.realtimeSubs.push(sub);
+function subCh(chId){
+  S.subs.forEach(s=>s.unsubscribe());S.subs=[];
+  const sub=_db.channel(`msgs_${chId}`)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`channel_id=eq.${chId}`},async payload=>{
+      const {data}=await _db.from('messages').select('*,profiles(*)').eq('id',payload.new.id).single();
+      if(data&&data.author_id!==S.user.id) appendMsg(data);
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'messages',filter:`channel_id=eq.${chId}`},payload=>{
+      document.getElementById(`msg_${payload.old.id}`)?.remove();
+    })
+    .subscribe();
+  S.subs.push(sub);
 }
-
-function subscribeGlobal() {
-    // Profile status updates
-    db().channel('presence')
-        .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles'
-        }, (payload) => {
-            // Update member list if in a server
-            const member = AppState.members.find(m => m.user_id === payload.new.id);
-            if (member) {
-                member.profiles = { ...member.profiles, ...payload.new };
-                renderMembers();
-            }
-        })
-        .subscribe();
+function subscribeGlobal(){
+  _db.channel('presence').on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},payload=>{
+    const m=S.members.find(x=>x.user_id===payload.new.id);
+    if(m){m.profiles={...m.profiles,...payload.new};renderMembers();}
+  }).subscribe();
 }
 
 // ============================================================
 // UI HELPERS
 // ============================================================
-function showChatView() {
-    document.getElementById('welcomeScreen').style.display = 'none';
-    const cv = document.getElementById('chatView');
-    cv.style.display = 'flex';
+function showChat(){
+  document.getElementById('welcomeScreen').style.display='none';
+  const cv=document.getElementById('chatView');cv.style.display='flex';
 }
-
-function scrollToBottom() {
-    const c = document.getElementById('messages-container');
-    c.scrollTop = c.scrollHeight;
-    document.getElementById('scrollToBottom').classList.remove('show');
+function scrollBottom(){
+  const c=document.getElementById('msgs-cnt');c.scrollTop=c.scrollHeight;
+  document.getElementById('stb').classList.remove('show');
 }
-
-function scrollToMessage(msgId) {
-    document.getElementById(`msg_${msgId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-function openLightbox(url) {
-    document.getElementById('lightboxImg').src = url;
-    document.getElementById('lightbox').classList.add('show');
-}
-
-function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('show');
+function scrollToMsg(id){document.getElementById(`msg_${id}`)?.scrollIntoView({behavior:'smooth',block:'center'});}
+function openLbox(url){document.getElementById('lboxImg').src=url;document.getElementById('lbox').classList.add('show');}
+function closeLbox(){document.getElementById('lbox').classList.remove('show');}
+document.getElementById('msgs-cnt').addEventListener('scroll',function(){
+  const ab=this.scrollHeight-this.scrollTop-this.clientHeight<100;
+  document.getElementById('stb').classList.toggle('show',!ab);
+});
+function showEmoji(){
+  const ems=['😀','😂','😍','🥰','😎','🤔','😅','🥲','😭','😡','🐍','🔥','💚','❤️','👍','👏','✨','🎉'];
+  const pk=document.createElement('div');pk.className='ctx-menu';pk.style.cssText='position:fixed;bottom:80px;right:80px;z-index:1000';
+  pk.innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:200px">${ems.map(e=>`<span style="font-size:22px;cursor:pointer;padding:4px;border-radius:4px" onclick="document.getElementById('msgInp').value+='${e}';this.closest('.ctx-menu').remove()">${e}</span>`).join('')}</div>`;
+  document.body.appendChild(pk);
+  setTimeout(()=>document.addEventListener('click',()=>pk.remove(),{once:true}),50);
 }
 
 // ============================================================
 // MODALS
 // ============================================================
-function showCreateServer() {
-    showModal(`
-        <div class="modal-header">
-            <h3 class="modal-title">Tạo Server mới</h3>
-            <button class="modal-close" onclick="closeModal()">✕</button>
+function showModal(html){
+  document.getElementById('activeModal')?.remove();
+  const o=document.createElement('div');o.className='modal-overlay';o.id='activeModal';
+  o.innerHTML=`<div class="modal">${html}</div>`;
+  o.addEventListener('click',e=>{if(e.target===o)closeModal();});
+  document.body.appendChild(o);
+}
+function closeModal(){document.getElementById('activeModal')?.remove();}
+
+// ============================================================
+// SETTINGS & PROFILE
+// ============================================================
+function showSettings(){
+  showModal(`
+    <div class="modal-header"><h3 class="modal-title">Cài đặt</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="input-group"><label class="input-label">Tên hiển thị</label><input type="text" class="input" id="sName" value="${S.profile?.display_name||''}"></div>
+    <div class="input-group"><label class="input-label">Bio</label><input type="text" class="input" id="sBio" value="${S.profile?.bio||''}" placeholder="Mô tả bản thân..."></div>
+    ${S.profile?.role==='admin'?`<hr style="border-color:var(--border);margin:16px 0"><button class="btn btn-ghost w-full mb2" onclick="showAdminPanel()">🛡️ Yêu cầu đăng ký</button>`:''}
+    <button class="btn btn-primary w-full mt4" onclick="saveSettings()">Lưu</button>
+    <button class="btn btn-danger w-full mt2" onclick="doSignOut()">⏏ Đăng xuất</button>`);
+}
+async function saveSettings(){
+  const n=document.getElementById('sName').value.trim(),b=document.getElementById('sBio').value.trim();
+  const {error}=await _db.from('profiles').update({display_name:n,bio:b}).eq('id',S.user.id);
+  if(error){T.error('Lưu thất bại: '+error.message);return;}
+  S.profile.display_name=n;S.profile.bio=b;updateSelfPanel();closeModal();T.success('Đã lưu!');
+}
+function showProfile(uid){
+  if(!uid||uid==='undefined') return;
+  const m=S.members.find(x=>x.user_id===uid);
+  const p=m?.profiles||(uid===S.user?.id?S.profile:null);if(!p) return;
+  const name=p.display_name||p.username;
+  showModal(`
+    <div style="text-align:center;padding:16px 0">
+      <div class="avatar av80" style="margin:0 auto 16px">${p.avatar_url?`<img src="${p.avatar_url}">`:name[0].toUpperCase()}</div>
+      <h3>${name}</h3><div class="text-muted text-sm">@${p.username}</div>
+      ${p.bio?`<p style="margin-top:12px;font-size:14px;color:var(--text-muted)">${p.bio}</p>`:''}
+      <div style="margin-top:8px"><span class="badge badge-${p.role||'user'}">${p.role||'user'}</span></div>
+    </div>
+    ${uid!==S.user?.id?`<div style="display:flex;gap:8px;justify-content:center;margin-top:16px"><button class="btn btn-primary btn-sm" onclick="startDM('${uid}');closeModal()">💬 Nhắn tin</button></div>`:''}`);
+}
+function showStatusMenu(e){
+  e.stopPropagation();
+  const st=[{id:'online',l:'🟢 Online'},{id:'idle',l:'🌙 Vắng mặt'},{id:'dnd',l:'⛔ Không làm phiền'},{id:'offline',l:'⚫ Ẩn danh'}];
+  const m=document.createElement('div');m.className='ctx-menu';m.style.cssText='position:fixed;bottom:60px;left:80px;z-index:2000';
+  m.innerHTML=st.map(s=>`<div class="ctx-item" onclick="setStatus('${s.id}');this.closest('.ctx-menu').remove()">${s.l}</div>`).join('');
+  document.body.appendChild(m);setTimeout(()=>document.addEventListener('click',()=>m.remove(),{once:true}),0);
+}
+async function setStatus(st){
+  await _db.from('profiles').update({status:st}).eq('id',S.user.id);
+  S.profile.status=st;document.getElementById('selfStatus').textContent=`● ${st}`;
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+async function showAdminPanel(){
+  const {data}=await _db.from('signup_requests').select('*').eq('status','pending').order('created_at');
+  showModal(`
+    <div class="modal-header"><h3 class="modal-title">Yêu cầu đăng ký (${data?.length||0})</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="max-height:400px;overflow-y:auto">
+      ${!data?.length?'<div class="text-muted text-sm">Không có yêu cầu nào</div>':
+      data.map(r=>`<div style="background:var(--bg-tertiary);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div><strong>@${r.username}</strong> <span class="text-muted text-sm">${r.email}</span></div>
+          <span class="text-xs text-muted">${TU.fmt(r.created_at)}</span>
         </div>
-        <div class="input-group">
-            <label class="input-label">Tên Server</label>
-            <input type="text" class="input" id="newServerName" placeholder="Server của tôi">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="approveReq('${r.id}','${r.email}','${r.username}')">✓ Duyệt</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectReq('${r.id}')">✕ Từ chối</button>
         </div>
-        <div class="input-group">
-            <label class="input-label">Mô tả</label>
-            <input type="text" class="input" id="newServerDesc" placeholder="Mô tả ngắn...">
-        </div>
-        <button class="btn btn-primary w-full" onclick="createServer()">Tạo Server</button>
-    `);
+      </div>`).join('')}
+    </div>`);
+}
+async function approveReq(id,email,username){
+  T.info(`Tạo user tại Supabase Dashboard > Auth > Users với email: ${email}`);
+  await _db.from('signup_requests').update({status:'approved',reviewed_by:S.user.id,reviewed_at:new Date().toISOString()}).eq('id',id);
+  T.success(`Đã duyệt @${username}`);showAdminPanel();
+}
+async function rejectReq(id){
+  const reason=prompt('Lý do từ chối:')||'Không phù hợp';
+  await _db.from('signup_requests').update({status:'rejected',reviewed_by:S.user.id,reviewed_at:new Date().toISOString(),reject_reason:reason}).eq('id',id);
+  T.info('Đã từ chối');showAdminPanel();
 }
 
-async function createServer() {
-    const name = document.getElementById('newServerName').value.trim();
-    if (!name) { Toast.error('Nhập tên server'); return; }
-
-    const { data: server, error } = await db().from('servers').insert({
-        name,
-        description: document.getElementById('newServerDesc').value.trim(),
-        owner_id: AppState.user.id
-    }).select().single();
-
-    if (error) { Toast.error('Không tạo được server'); return; }
-
-    // Add owner as admin member
-    await db().from('server_members').insert({ server_id: server.id, user_id: AppState.user.id, role: 'admin' });
-
-    // Create default channels
-    await db().from('channels').insert([
-        { server_id: server.id, name: 'general', type: 'text', position: 0 },
-        { server_id: server.id, name: 'thông-báo', type: 'announcement', position: 1 },
-    ]);
-
-    closeModal();
-    await loadServers();
-    Toast.success(`Server "${name}" đã được tạo!`);
+// ============================================================
+// CHANNELS & SERVER MANAGEMENT
+// ============================================================
+function showCreateChannel(e){
+  e.stopPropagation();if(!S.currentServer) return;
+  showModal(`<div class="modal-header"><h3 class="modal-title">Tạo kênh</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="input-group"><label class="input-label">Tên kênh</label><input type="text" class="input" id="nChName" placeholder="ten-kenh"></div>
+    <button class="btn btn-primary w-full" onclick="createCh()">Tạo kênh</button>`);
 }
-
-function showUserProfile(userId) {
-    if (!userId || userId === 'undefined') return;
-    const member = AppState.members.find(m => m.user_id === userId);
-    const profile = member?.profiles || (userId === AppState.user?.id ? AppState.profile : null);
-    if (!profile) return;
-
-    const name = profile.display_name || profile.username;
-    showModal(`
-        <div style="text-align:center;padding:16px 0">
-            <div class="avatar avatar-80" style="margin:0 auto 16px">
-                ${profile.avatar_url ? `<img src="${profile.avatar_url}">` : name[0].toUpperCase()}
-            </div>
-            <h3>${name}</h3>
-            <div class="text-muted text-sm">@${profile.username}</div>
-            ${profile.bio ? `<p style="margin-top:12px;font-size:14px;color:var(--text-muted)">${profile.bio}</p>` : ''}
-            <div style="margin-top:8px">
-                <span class="badge badge-${profile.role || 'user'}">${profile.role || 'user'}</span>
-            </div>
-        </div>
-        ${userId !== AppState.user?.id ? `
-        <div style="display:flex;gap:8px;justify-content:center;margin-top:16px">
-            <button class="btn btn-primary btn-sm" onclick="startDM('${userId}'); closeModal()">Nhắn tin</button>
-            <button class="btn btn-ghost btn-sm" onclick="sendFriendRequest('${userId}'); closeModal()">Kết bạn</button>
-        </div>
-        ` : ''}
-    `);
+async function createCh(){
+  const n=document.getElementById('nChName').value.trim().toLowerCase().replace(/\s+/g,'-');if(!n) return;
+  const {error}=await _db.from('channels').insert({server_id:S.currentServer.id,name:n,type:'text'});
+  if(error){T.error('Không tạo được kênh');return;}
+  closeModal();await loadChannels(S.currentServer.id);T.success(`Kênh #${n} đã tạo!`);
 }
-
-async function showNewDM() {
-    showModal(`
-        <div class="modal-header">
-            <h3 class="modal-title">Nhắn tin mới</h3>
-            <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="input-group">
-            <label class="input-label">Username</label>
-            <input type="text" class="input" id="dmUsername" placeholder="tenban123" oninput="searchUsers(this.value)">
-        </div>
-        <div id="userSearchResults"></div>
-    `);
+function showCreateServer(){
+  showModal(`<div class="modal-header"><h3 class="modal-title">Tạo Server</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="input-group"><label class="input-label">Tên Server</label><input type="text" class="input" id="nSrvName" placeholder="Server của tôi"></div>
+    <div class="input-group"><label class="input-label">Mô tả</label><input type="text" class="input" id="nSrvDesc" placeholder="Mô tả ngắn..."></div>
+    <button class="btn btn-primary w-full" onclick="createSrv()">Tạo Server</button>`);
 }
-
-async function searchUsers(query) {
-    if (!query || query.length < 2) return;
-    const { data } = await db().from('profiles').select('*').ilike('username', `%${query}%`).neq('id', AppState.user.id).limit(5);
-    const res = document.getElementById('userSearchResults');
-    if (!data?.length) { res.innerHTML = '<div class="text-muted text-sm">Không tìm thấy</div>'; return; }
-
-    res.innerHTML = data.map(p => `
-        <div class="member-item" onclick="startDM('${p.id}'); closeModal()" style="border-radius:8px">
-            <div class="avatar avatar-32">${p.display_name?.[0] || p.username[0]}</div>
-            <div>
-                <div class="member-name">${p.display_name || p.username}</div>
-                <div class="text-xs text-muted">@${p.username}</div>
-            </div>
-        </div>
-    `).join('');
+async function createSrv(){
+  const n=document.getElementById('nSrvName').value.trim();if(!n){T.error('Nhập tên server');return;}
+  const {data:srv,error}=await _db.from('servers').insert({name:n,description:document.getElementById('nSrvDesc').value.trim(),owner_id:S.user.id}).select().single();
+  if(error){T.error('Không tạo được server');return;}
+  await _db.from('server_members').insert({server_id:srv.id,user_id:S.user.id,role:'admin'});
+  await _db.from('channels').insert([{server_id:srv.id,name:'general',type:'text',position:0},{server_id:srv.id,name:'thông-báo',type:'announcement',position:1}]);
+  closeModal();await loadServers();T.success(`Server "${n}" đã tạo!`);
 }
+function showSrvSettings(e){e.stopPropagation();T.info('Server settings đang phát triển 🚧');}
 
-async function startDM(userId) {
-    // Check existing DM
-    const { data: existing } = await supabase
-        .from('dm_participants')
-        .select('channel_id')
-        .eq('user_id', AppState.user.id);
-
-    for (const dm of existing || []) {
-        const { data: other } = await supabase
-            .from('dm_participants')
-            .select('user_id')
-            .eq('channel_id', dm.channel_id)
-            .eq('user_id', userId)
-            .single();
-
-        if (other) {
-            selectDM(dm.channel_id, '', 'offline');
-            return;
-        }
-    }
-
-    // Create new DM channel
-    const { data: ch } = await db().from('channels').insert({ is_dm: true, name: 'dm' }).select().single();
-    await db().from('dm_participants').insert([
-        { channel_id: ch.id, user_id: AppState.user.id },
-        { channel_id: ch.id, user_id: userId }
-    ]);
-
-    selectDM(ch.id, '', 'online');
-    loadDMs();
+// ============================================================
+// DM
+// ============================================================
+function showNewDM(){
+  showModal(`<div class="modal-header"><h3 class="modal-title">Nhắn tin mới</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="input-group"><label class="input-label">Tìm người dùng</label><input type="text" class="input" id="dmQ" placeholder="username..." oninput="searchUsers(this.value)"></div>
+    <div id="dmRes"></div>`);
 }
-
-async function selectDM(channelId, name, status) {
-    AppState.currentChannel = { id: channelId, name: name || 'DM', is_dm: true };
-    AppState.isBotChannel = false;
-
-    document.getElementById('chatIcon').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
-    document.getElementById('chatName').textContent = name || 'DM';
-    document.getElementById('chatTopic').textContent = '';
-    document.getElementById('botModeBar').classList.remove('show');
-
-    showChatView();
-    await loadMessages(channelId);
-    subscribeChannel(channelId);
+async function searchUsers(q){
+  if(!q||q.length<2) return;
+  const {data}=await _db.from('profiles').select('*').ilike('username',`%${q}%`).neq('id',S.user.id).limit(5);
+  const r=document.getElementById('dmRes');
+  if(!data?.length){r.innerHTML='<div class="text-muted text-sm">Không tìm thấy</div>';return;}
+  r.innerHTML=data.map(p=>`<div class="mb-item" onclick="startDM('${p.id}');closeModal()" style="border-radius:8px">
+    <div class="avatar av32">${p.display_name?.[0]||p.username[0]}</div>
+    <div><div class="mb-name">${p.display_name||p.username}</div><div class="text-xs text-muted">@${p.username}</div></div></div>`).join('');
 }
-
-async function sendFriendRequest(userId) {
-    const { error } = await db().from('friends').insert({ requester_id: AppState.user.id, addressee_id: userId });
-    if (error) {
-        Toast.error('Đã gửi yêu cầu kết bạn rồi hoặc lỗi xảy ra.');
-    } else {
-        Toast.success('Đã gửi yêu cầu kết bạn!');
-    }
+async function startDM(uid){
+  const {data:ex}=await _db.from('dm_participants').select('channel_id').eq('user_id',S.user.id);
+  for(const dm of ex||[]){
+    const {data:o}=await _db.from('dm_participants').select('user_id').eq('channel_id',dm.channel_id).eq('user_id',uid).single();
+    if(o){selectDM(dm.channel_id,'','offline');return;}
+  }
+  const {data:ch}=await _db.from('channels').insert({is_dm:true,name:'dm'}).select().single();
+  await _db.from('dm_participants').insert([{channel_id:ch.id,user_id:S.user.id},{channel_id:ch.id,user_id:uid}]);
+  selectDM(ch.id,'','online');loadDMs();
 }
-
-function showStatusMenu(e) {
-    e.stopPropagation();
-    const statuses = [
-        { id: 'online', label: '🟢 Online' },
-        { id: 'idle', label: '🌙 Vắng mặt' },
-        { id: 'dnd', label: '⛔ Không làm phiền' },
-        { id: 'offline', label: '⚫ Ẩn danh' },
-    ];
-
-    const menu = document.createElement('div');
-    menu.className = 'ctx-menu';
-    menu.style.cssText = 'position:fixed;bottom:60px;left:80px;z-index:2000';
-    menu.innerHTML = statuses.map(s => `
-        <div class="ctx-menu-item" onclick="setStatus('${s.id}'); this.closest('.ctx-menu').remove()">${s.label}</div>
-    `).join('');
-
-    document.body.appendChild(menu);
-    setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
+async function selectDM(chId,name,status){
+  S.currentChannel={id:chId,name:name||'DM',is_dm:true};S.isBot=false;
+  document.getElementById('chatIco').textContent='💬';
+  document.getElementById('chatName').textContent=name||'DM';
+  document.getElementById('chatTopic').textContent='';
+  document.getElementById('botBar').classList.remove('show');
+  showChat();await loadMsgs(chId);subCh(chId);
 }
-
-async function setStatus(status) {
-    await db().from('profiles').update({ status }).eq('id', AppState.user.id);
-    AppState.profile.status = status;
-    document.getElementById('selfStatus').textContent = `● ${status}`;
-}
-
-function showSettings() {
-    showModal(`
-        <div class="modal-header">
-            <h3 class="modal-title">Cài đặt</h3>
-            <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="input-group">
-            <label class="input-label">Tên hiển thị</label>
-            <input type="text" class="input" id="settingsName" value="${AppState.profile?.display_name || ''}">
-        </div>
-        <div class="input-group">
-            <label class="input-label">Bio</label>
-            <input type="text" class="input" id="settingsBio" value="${AppState.profile?.bio || ''}" placeholder="Mô tả bản thân...">
-        </div>
-        ${AppState.profile?.role === 'admin' ? `
-        <div class="divider">Admin Panel</div>
-        <button class="btn btn-ghost w-full mb-2" onclick="showSignupRequests()">Yêu cầu đăng ký</button>
-        ` : ''}
-        <button class="btn btn-primary w-full mt-4" onclick="saveSettings()">Lưu</button>
-        <button class="btn btn-danger w-full mt-2" onclick="Auth.signOut()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Đăng xuất</button>
-    `);
-}
-
-async function saveSettings() {
-    const name = document.getElementById('settingsName').value.trim();
-    const bio = document.getElementById('settingsBio').value.trim();
-
-    await db().from('profiles').update({ display_name: name, bio }).eq('id', AppState.user.id);
-    AppState.profile.display_name = name;
-    AppState.profile.bio = bio;
-    updateSelfPanel();
-    closeModal();
-    Toast.success('Đã lưu cài đặt!');
-}
-
-async function showSignupRequests() {
-    const { data } = await db().from('signup_requests').select('*').eq('status', 'pending').order('created_at');
-
-    showModal(`
-        <div class="modal-header">
-            <h3 class="modal-title">Yêu cầu đăng ký (${data?.length || 0})</h3>
-            <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div style="max-height:400px;overflow-y:auto">
-            ${!data?.length ? '<div class="text-muted text-sm">Không có yêu cầu nào</div>' :
-            data.map(req => `
-                <div style="background:var(--bg-tertiary);border-radius:8px;padding:12px;margin-bottom:8px">
-                    <div class="flex justify-between items-center mb-2">
-                        <div>
-                            <strong>@${req.username}</strong>
-                            <span class="text-muted text-sm ml-2">${req.email}</span>
-                        </div>
-                        <span class="text-xs text-muted">${TimeUtil.format(req.created_at)}</span>
-                    </div>
-                    <div style="display:flex;gap:8px">
-                        <button class="btn btn-primary btn-sm" onclick="approveRequest('${req.id}', '${req.email}', '${req.username}', '${req.password_hash}', '${req.display_name || req.username}')">Duyệt</button>
-                        <button class="btn btn-danger btn-sm" onclick="rejectRequest('${req.id}')">✕ Từ chối</button>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `);
-}
-
-async function approveRequest(reqId, email, username, passwordHash, displayName) {
-    // In production: call Supabase Admin API via Edge Function to create user
-    // Here we simulate: admin creates the user manually via Dashboard
-    Toast.info('Tạo tài khoản qua Supabase Dashboard > Auth > Users rồi chạy: UPDATE profiles SET role=\'user\' WHERE username=\'' + username + '\'');
-
-    await db().from('signup_requests').update({
-        status: 'approved',
-        reviewed_by: AppState.user.id,
-        reviewed_at: new Date().toISOString()
-    }).eq('id', reqId);
-
-    Toast.success(`Đã duyệt @${username}`);
-    showSignupRequests();
-}
-
-async function rejectRequest(reqId) {
-    const reason = prompt('Lý do từ chối (có thể bỏ qua):') || 'Không phù hợp';
-    await db().from('signup_requests').update({
-        status: 'rejected',
-        reviewed_by: AppState.user.id,
-        reviewed_at: new Date().toISOString(),
-        reject_reason: reason
-    }).eq('id', reqId);
-    Toast.info('Đã từ chối yêu cầu');
-    showSignupRequests();
-}
-
-function showCreateChannel(e) {
-    e.stopPropagation();
-    if (!AppState.currentServer) return;
-    showModal(`
-        <div class="modal-header">
-            <h3 class="modal-title">Tạo kênh mới</h3>
-            <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="input-group">
-            <label class="input-label">Tên kênh</label>
-            <input type="text" class="input" id="newChName" placeholder="ten-kenh">
-        </div>
-        <button class="btn btn-primary w-full" onclick="createChannel()">Tạo kênh</button>
-    `);
-}
-
-async function createChannel() {
-    const name = document.getElementById('newChName').value.trim().toLowerCase().replace(/\s+/g, '-');
-    if (!name) return;
-
-    await db().from('channels').insert({
-        server_id: AppState.currentServer.id,
-        name,
-        type: 'text'
-    });
-
-    closeModal();
-    await loadChannels(AppState.currentServer.id);
-    Toast.success(`Kênh #${name} đã tạo!`);
-}
-
-function showPinnedMessages() {
-    Toast.info('Tính năng đang phát triển 🚧');
-}
-
-function showSearch() {
-    Toast.info('Tính năng đang phát triển 🚧');
-}
-
-function showServerSettings(e) {
-    e.stopPropagation();
-    if (!AppState.currentServer || AppState.currentServer.owner_id !== AppState.user.id) return;
-    Toast.info('Server settings đang phát triển 🚧');
-}
-
-function showEmojiPicker() {
-    const emojis = ['😀','😂','😍','🥰','😎','🤔','😅','🥲','😭','😡','🐍','🔥','💚','❤️','👍','👏','✨','🎉'];
-    const input = document.getElementById('msgInput');
-    const picker = document.createElement('div');
-    picker.className = 'ctx-menu';
-    picker.style.cssText = 'position:fixed;bottom:80px;right:80px;z-index:1000';
-    picker.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:200px">${emojis.map(e => `<span style="font-size:22px;cursor:pointer;padding:4px;border-radius:4px" onclick="document.getElementById('msgInput').value+=\\'${e}\\'; this.closest('.ctx-menu').remove()">${e}</span>`).join('')}</div>`;
-    document.body.appendChild(picker);
-    setTimeout(() => document.addEventListener('click', () => picker.remove(), { once: true }), 50);
-}
-
-function showModal(html) {
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.id = 'activeModal';
-    overlay.innerHTML = `<div class="modal">${html}</div>`;
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
-    document.body.appendChild(overlay);
-}
-
-function closeModal() {
-    document.getElementById('activeModal')?.remove();
-}
-
-// Handle scroll for "new messages" button
-document.getElementById('messages-container')?.addEventListener('scroll', function() {
-    const atBottom = this.scrollHeight - this.scrollTop - this.clientHeight < 100;
-    document.getElementById('scrollToBottom').classList.toggle('show', !atBottom);
-});
 </script>
 </body>
 </html>
