@@ -24,8 +24,18 @@ let _db = null;
 
 function initSupabase() {
     if (_db) return _db;
-    // window.supabase = CDN namespace {createClient, ...} — KHÔNG override nó
-    _db = window.supabase.createClient(TQT.SUPABASE_URL, TQT.SUPABASE_ANON_KEY, {
+    if (!window.supabase || !window.supabase.createClient) {
+        throw new Error('Supabase CDN chưa load — kiểm tra thứ tự script');
+    }
+    if (!TQT.SUPABASE_URL || TQT.SUPABASE_URL.includes('YOUR_PROJECT')) {
+        throw new Error('SUPABASE_URL chưa được cấu hình trong core.js');
+    }
+    if (!TQT.SUPABASE_ANON_KEY || TQT.SUPABASE_ANON_KEY.includes('YOUR_ANON')) {
+        throw new Error('SUPABASE_ANON_KEY chưa được cấu hình trong core.js');
+    }
+    // Lưu factory trước (window.supabase = CDN namespace)
+    const factory = window.supabase;
+    _db = factory.createClient(TQT.SUPABASE_URL, TQT.SUPABASE_ANON_KEY, {
         realtime: { params: { eventsPerSecond: 10 } }
     });
     return _db;
@@ -203,6 +213,13 @@ const TimeUtil = {
 };
 
 // ============================================================
-// INIT — chạy ngay khi script load
+// INIT — defer đến sau khi tất cả scripts load
 // ============================================================
-initSupabase();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        try { initSupabase(); } catch(e) { console.error('[TQT Init]', e.message); }
+    });
+} else {
+    // Script load defer/async, DOM đã sẵn
+    try { initSupabase(); } catch(e) { console.error('[TQT Init]', e.message); }
+}
