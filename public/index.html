@@ -1080,6 +1080,7 @@ async function doLogin() {
       showAlert('login-err', msgs[error.message] || 'Dang nhap that bai. Thu lai sau.');
       return;
     }
+    await _db.auth.getSession();
     const { data: pf } = await _db.from('profiles').select('is_banned,ban_reason').eq('id', data.user.id).single();
     if (pf?.is_banned) {
       await _db.auth.signOut();
