@@ -241,7 +241,7 @@ async function validateUsername(val) {
     msg.textContent = '⏳ Kiểm tra...';
     msg.style.color = 'var(--text-muted)';
 
-    const { data } = await supabase.from('profiles').select('id').eq('username', val).maybeSingle();
+    const { data } = await db().from('profiles').select('id').eq('username', val).maybeSingle();
     if (data) {
         msg.textContent = '❌ Username đã tồn tại';
         msg.style.color = 'var(--text-danger)';
@@ -310,11 +310,11 @@ async function handleRegister() {
 
     try {
         // Check username taken
-        const { data: existing } = await supabase.from('profiles').select('id').eq('username', username).maybeSingle();
+        const { data: existing } = await db().from('profiles').select('id').eq('username', username).maybeSingle();
         if (existing) { showError('Username đã được sử dụng.'); btn.disabled = false; btn.textContent = 'Gửi yêu cầu đăng ký'; return; }
 
         // Check email in signup_requests
-        const { data: existReq } = await supabase.from('signup_requests').select('id, status').eq('email', email).maybeSingle();
+        const { data: existReq } = await db().from('signup_requests').select('id, status').eq('email', email).maybeSingle();
         if (existReq) {
             if (existReq.status === 'pending') { showError('Email này đã có yêu cầu đang chờ duyệt.'); }
             else if (existReq.status === 'rejected') { showError('Yêu cầu với email này đã bị từ chối.'); }
@@ -325,7 +325,7 @@ async function handleRegister() {
 
         // Hash password client-side for storage (actual auth done by admin)
         // Store request - admin will create the actual Supabase auth user
-        const { error } = await supabase.from('signup_requests').insert({
+        const { error } = await db().from('signup_requests').insert({
             email,
             username,
             display_name: displayName || username,
