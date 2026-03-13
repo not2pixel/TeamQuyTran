@@ -739,71 +739,85 @@ const AppState = {
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
-    // Dùng onAuthStateChange thay vì getSession() để tránh race condition
-    // Supabase sẽ emit SIGNED_IN ngay khi đọc được session từ localStorage
+document.addEventListener('DOMContentLoaded', async () => {
+    // Bước 1: getSession() đồng bộ — đọc thẳng từ localStorage, không bị race condition
+    // Đây là fix cho lỗi "vẫn đang xác thực" sau khi đăng nhập xong
+    const { data: { session: initialSession } } = await db().auth.getSession();
+
+    if (initialSession) {
+        // Có session ngay — khởi động app luôn
+        await initApp(initialSession);
+    }
+    // Nếu không có session, onAuthStateChange bên dưới sẽ xử lý redirect
+
+    // Bước 2: Lắng nghe thay đổi tiếp theo (logout, token refresh, v.v.)
     db().auth.onAuthStateChange(async (event, session) => {
-        // Chỉ xử lý lần đầu (INITIAL_SESSION hoặc SIGNED_IN)
         if (event === 'SIGNED_OUT') {
             window.location.replace('/LogIn/');
             return;
         }
 
-        // Chưa có session sau khi check xong
-        if (!session) {
-            window.location.replace('/LogIn/');
+        // INITIAL_SESSION đã xử lý ở trên bằng getSession()
+        // Chỉ xử lý SIGNED_IN khi chưa có AppState.user (trường hợp hiếm: getSession trả null nhưng sau đó có session)
+        if (event === 'SIGNED_IN' && !AppState.user && session) {
+            await initApp(session);
             return;
         }
 
-        // Đã xử lý rồi (tránh chạy lại khi token refresh)
-        if (AppState.user) return;
-
-        AppState.user = session.user;
-
-        // Load profile — retry nếu chưa tạo kịp (trigger async)
-        let profile = await Auth.getProfile(session.user.id);
-        if (!profile) {
-            // Đợi trigger tạo profile
-            await new Promise(r => setTimeout(r, 1000));
-            profile = await Auth.getProfile(session.user.id);
-        }
-        if (!profile) {
-            // Profile thật sự không tồn tại
-            console.error('[TQT] Profile not found for', session.user.id);
+        // Nếu INITIAL_SESSION mà không có session và chưa init → redirect
+        if (event === 'INITIAL_SESSION' && !session && !AppState.user) {
             window.location.replace('/LogIn/');
             return;
         }
-
-        AppState.profile = profile;
-
-        // Reveal app, remove gate
-        document.getElementById('app').classList.add('ready');
-        const gate = document.getElementById('authGate');
-        if (gate) {
-            gate.style.opacity = '0';
-            gate.style.transition = 'opacity 0.3s';
-            setTimeout(() => gate.remove(), 300);
-        }
-
-        // Update UI
-        updateSelfPanel();
-
-        // Load DMs and servers
-        await loadServers();
-        await loadDMs();
-
-        // Subscribe to realtime
-        subscribeGlobal();
-
-        // Set online
-        await db().from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
-
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            db().from('profiles').update({ status: 'offline', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
-        });
-    }); // end onAuthStateChange
+    });
 }); // end DOMContentLoaded
+
+async function initApp(session) {
+    // Tránh chạy 2 lần
+    if (AppState.user) return;
+    AppState.user = session.user;
+
+    // Load profile — retry nếu trigger tạo profile chưa chạy kịp
+    let profile = await Auth.getProfile(session.user.id);
+    if (!profile) {
+        await new Promise(r => setTimeout(r, 1000));
+        profile = await Auth.getProfile(session.user.id);
+    }
+    if (!profile) {
+        console.error('[TQT] Profile not found for', session.user.id);
+        window.location.replace('/LogIn/');
+        return;
+    }
+
+    AppState.profile = profile;
+
+    // Reveal app, remove gate
+    document.getElementById('app').classList.add('ready');
+    const gate = document.getElementById('authGate');
+    if (gate) {
+        gate.style.opacity = '0';
+        gate.style.transition = 'opacity 0.3s';
+        setTimeout(() => gate.remove(), 300);
+    }
+
+    // Update UI
+    updateSelfPanel();
+
+    // Load DMs and servers
+    await loadServers();
+    await loadDMs();
+
+    // Subscribe to realtime
+    subscribeGlobal();
+
+    // Set online
+    await db().from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+
+    // Handle page unload
+    window.addEventListener('beforeunload', () => {
+        db().from('profiles').update({ status: 'offline', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+    });
+}
 
 // ============================================================
 // SELF PANEL
