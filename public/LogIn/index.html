@@ -202,7 +202,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
         <label class="input-label">Mật khẩu</label>
         <div class="input-icon">
             <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-            <input type="password" class="input" id="passwordInput" placeholder="••••••••" autocomplete="current-password">
+            <input type="password" class="input" id="passwordInput" placeholder="••••••••" autocomplete="off">
             <button class="eye-toggle" onclick="togglePass()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
     </div>
@@ -288,7 +288,7 @@ async function handleLogin() {
             return;
         }
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await db().auth.signInWithPassword({ email, password });
 
         if (error) {
             const msgs = {
@@ -308,13 +308,13 @@ async function handleLogin() {
             .single();
 
         if (profile?.is_banned) {
-            await supabase.auth.signOut();
+            await db().auth.signOut();
             showError(`Tài khoản đã bị khóa. Lý do: ${profile.ban_reason || 'Vi phạm quy tắc.'}`);
             return;
         }
 
         // Update online status
-        await supabase.from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', data.user.id);
+        await db().from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', data.user.id);
 
         LocalCache.setUser({ ...data.user, profile });
         window.location.href = '/app/';
@@ -334,7 +334,7 @@ async function handleForgot(e) {
         return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await db().auth.resetPasswordForEmail(email, {
         redirectTo: `${location.origin}/app/reset-password.html`
     });
     setLoading(false);
