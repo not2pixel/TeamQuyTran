@@ -1063,11 +1063,11 @@ const App = {
   else showAuth();
 
   db.auth.onAuthStateChange(async (event, session) => {
+    console.log('[TQT] auth event:', event, !!session);
     if (event === 'SIGNED_OUT') { resetApp(); showAuth(); return; }
-    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && !App.user) {
+    if (session && !App.user) {
       await initApp(session);
     }
-    if (event === 'INITIAL_SESSION' && !session && !App.user) showAuth();
   });
 })();
 
