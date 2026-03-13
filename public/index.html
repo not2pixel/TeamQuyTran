@@ -1058,13 +1058,14 @@ const App = {
    BOOT
    ================================================================= */
 (async () => {
-  const { data: { session } } = await db.auth.getSession();
-  if (session) await initApp(session);
-  else showAuth();
-
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('[TQT] auth event:', event, !!session);
     if (event === 'SIGNED_OUT') { resetApp(); showAuth(); return; }
+    if (event === 'INITIAL_SESSION') {
+      if (session) await initApp(session);
+      else showAuth();
+      return;
+    }
     if (event === 'SIGNED_IN' && session && !App.user) {
       await initApp(session);
     }
