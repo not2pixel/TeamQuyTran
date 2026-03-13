@@ -745,7 +745,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let session = null;
     try {
-        const res = await supabase.auth.getSession();
+        const res = await db().auth.getSession();
         session = res.data.session;
     } catch(e) {}
 
@@ -777,11 +777,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     subscribeGlobal();
 
     // Set online
-    await supabase.from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+    await db().from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
 
     // Handle page unload
     window.addEventListener('beforeunload', () => {
-        supabase.from('profiles').update({ status: 'offline', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+        db().from('profiles').update({ status: 'offline', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
     });
 });
 
@@ -1235,7 +1235,7 @@ async function sendMessage() {
     appendMessage(optimistic);
 
     // Send to Supabase
-    const { data, error } = await supabase.from('messages').insert(msgData).select('*, profiles(*)').single();
+    const { data, error } = await db().from('messages').insert(msgData).select('*, profiles(*)').single();
     if (error) {
         Toast.error('Gửi tin nhắn thất bại.');
         document.getElementById(`msg_opt_${Date.now()}`)?.remove();
@@ -1334,7 +1334,7 @@ async function sendTyping() {
     if (!AppState.currentChannel || AppState.isBotChannel) return;
     clearTimeout(typingTimer);
     // Use Supabase presence or broadcast
-    const channel = supabase.channel(`typing_${AppState.currentChannel.id}`);
+    const channel = db().channel(`typing_${AppState.currentChannel.id}`);
     await channel.send({ type: 'broadcast', event: 'typing', payload: { userId: AppState.user.id, username: AppState.profile.username } });
     typingTimer = setTimeout(() => {}, 2000);
 }
@@ -1424,7 +1424,7 @@ function clearAttachments() {
 // ============================================================
 async function deleteMessage(msgId) {
     if (!confirm('Xóa tin nhắn này?')) return;
-    const { error } = await supabase.from('messages').delete().eq('id', msgId);
+    const { error } = await db().from('messages').delete().eq('id', msgId);
     if (!error) {
         document.getElementById(`msg_${msgId}`)?.remove();
     }
@@ -1439,7 +1439,7 @@ async function editMessage(msgId) {
     const newContent = prompt('Chỉnh sửa tin nhắn:', current);
     if (!newContent || newContent === current) return;
 
-    const { error } = await supabase.from('messages')
+    const { error } = await db().from('messages')
         .update({ content: newContent, edited: true, edited_at: new Date().toISOString() })
         .eq('id', msgId);
 
@@ -1449,7 +1449,7 @@ async function editMessage(msgId) {
 }
 
 async function pinMessage(msgId) {
-    const { error } = await supabase.from('messages').update({ pinned: true }).eq('id', msgId);
+    const { error } = await db().from('messages').update({ pinned: true }).eq('id', msgId);
     if (!error) Toast.success('Đã ghim tin nhắn');
 }
 
@@ -1464,7 +1464,7 @@ function addReaction(msgId) {
 }
 
 async function doReaction(msgId, emoji) {
-    await supabase.from('reactions').upsert({ message_id: msgId, user_id: AppState.user.id, emoji });
+    await db().from('reactions').upsert({ message_id: msgId, user_id: AppState.user.id, emoji });
 }
 
 // ============================================================
@@ -1475,7 +1475,7 @@ function subscribeChannel(channelId) {
     AppState.realtimeSubs.forEach(s => s.unsubscribe());
     AppState.realtimeSubs = [];
 
-    const sub = supabase.channel(`msgs_${channelId}`)
+    const sub = db().channel(`msgs_${channelId}`)
         .on('postgres_changes', {
             event: 'INSERT',
             schema: 'public',
@@ -1508,7 +1508,7 @@ function subscribeChannel(channelId) {
 
 function subscribeGlobal() {
     // Profile status updates
-    supabase.channel('presence')
+    db().channel('presence')
         .on('postgres_changes', {
             event: 'UPDATE',
             schema: 'public',
@@ -1577,7 +1577,7 @@ async function createServer() {
     const name = document.getElementById('newServerName').value.trim();
     if (!name) { Toast.error('Nhập tên server'); return; }
 
-    const { data: server, error } = await supabase.from('servers').insert({
+    const { data: server, error } = await db().from('servers').insert({
         name,
         description: document.getElementById('newServerDesc').value.trim(),
         owner_id: AppState.user.id
@@ -1586,10 +1586,10 @@ async function createServer() {
     if (error) { Toast.error('Không tạo được server'); return; }
 
     // Add owner as admin member
-    await supabase.from('server_members').insert({ server_id: server.id, user_id: AppState.user.id, role: 'admin' });
+    await db().from('server_members').insert({ server_id: server.id, user_id: AppState.user.id, role: 'admin' });
 
     // Create default channels
-    await supabase.from('channels').insert([
+    await db().from('channels').insert([
         { server_id: server.id, name: 'general', type: 'text', position: 0 },
         { server_id: server.id, name: 'thông-báo', type: 'announcement', position: 1 },
     ]);
@@ -1643,7 +1643,7 @@ async function showNewDM() {
 
 async function searchUsers(query) {
     if (!query || query.length < 2) return;
-    const { data } = await supabase.from('profiles').select('*').ilike('username', `%${query}%`).neq('id', AppState.user.id).limit(5);
+    const { data } = await db().from('profiles').select('*').ilike('username', `%${query}%`).neq('id', AppState.user.id).limit(5);
     const res = document.getElementById('userSearchResults');
     if (!data?.length) { res.innerHTML = '<div class="text-muted text-sm">Không tìm thấy</div>'; return; }
 
@@ -1680,8 +1680,8 @@ async function startDM(userId) {
     }
 
     // Create new DM channel
-    const { data: ch } = await supabase.from('channels').insert({ is_dm: true, name: 'dm' }).select().single();
-    await supabase.from('dm_participants').insert([
+    const { data: ch } = await db().from('channels').insert({ is_dm: true, name: 'dm' }).select().single();
+    await db().from('dm_participants').insert([
         { channel_id: ch.id, user_id: AppState.user.id },
         { channel_id: ch.id, user_id: userId }
     ]);
@@ -1705,7 +1705,7 @@ async function selectDM(channelId, name, status) {
 }
 
 async function sendFriendRequest(userId) {
-    const { error } = await supabase.from('friends').insert({ requester_id: AppState.user.id, addressee_id: userId });
+    const { error } = await db().from('friends').insert({ requester_id: AppState.user.id, addressee_id: userId });
     if (error) {
         Toast.error('Đã gửi yêu cầu kết bạn rồi hoặc lỗi xảy ra.');
     } else {
@@ -1734,7 +1734,7 @@ function showStatusMenu(e) {
 }
 
 async function setStatus(status) {
-    await supabase.from('profiles').update({ status }).eq('id', AppState.user.id);
+    await db().from('profiles').update({ status }).eq('id', AppState.user.id);
     AppState.profile.status = status;
     document.getElementById('selfStatus').textContent = `● ${status}`;
 }
@@ -1766,7 +1766,7 @@ async function saveSettings() {
     const name = document.getElementById('settingsName').value.trim();
     const bio = document.getElementById('settingsBio').value.trim();
 
-    await supabase.from('profiles').update({ display_name: name, bio }).eq('id', AppState.user.id);
+    await db().from('profiles').update({ display_name: name, bio }).eq('id', AppState.user.id);
     AppState.profile.display_name = name;
     AppState.profile.bio = bio;
     updateSelfPanel();
@@ -1775,7 +1775,7 @@ async function saveSettings() {
 }
 
 async function showSignupRequests() {
-    const { data } = await supabase.from('signup_requests').select('*').eq('status', 'pending').order('created_at');
+    const { data } = await db().from('signup_requests').select('*').eq('status', 'pending').order('created_at');
 
     showModal(`
         <div class="modal-header">
@@ -1808,7 +1808,7 @@ async function approveRequest(reqId, email, username, passwordHash, displayName)
     // Here we simulate: admin creates the user manually via Dashboard
     Toast.info('Tạo tài khoản qua Supabase Dashboard > Auth > Users rồi chạy: UPDATE profiles SET role=\'user\' WHERE username=\'' + username + '\'');
 
-    await supabase.from('signup_requests').update({
+    await db().from('signup_requests').update({
         status: 'approved',
         reviewed_by: AppState.user.id,
         reviewed_at: new Date().toISOString()
@@ -1820,7 +1820,7 @@ async function approveRequest(reqId, email, username, passwordHash, displayName)
 
 async function rejectRequest(reqId) {
     const reason = prompt('Lý do từ chối (có thể bỏ qua):') || 'Không phù hợp';
-    await supabase.from('signup_requests').update({
+    await db().from('signup_requests').update({
         status: 'rejected',
         reviewed_by: AppState.user.id,
         reviewed_at: new Date().toISOString(),
@@ -1850,7 +1850,7 @@ async function createChannel() {
     const name = document.getElementById('newChName').value.trim().toLowerCase().replace(/\s+/g, '-');
     if (!name) return;
 
-    await supabase.from('channels').insert({
+    await db().from('channels').insert({
         server_id: AppState.currentServer.id,
         name,
         type: 'text'
