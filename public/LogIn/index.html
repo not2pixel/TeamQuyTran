@@ -301,11 +301,7 @@ async function handleLogin() {
         }
 
         // Check if banned
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_banned, ban_reason, role')
-            .eq('id', data.user.id)
-            .single();
+        const { data: profile } = await db().from('profiles').select('is_banned, ban_reason, role').eq('id', data.user.id).single();
 
         if (profile?.is_banned) {
             await db().auth.signOut();
@@ -320,7 +316,8 @@ async function handleLogin() {
         window.location.href = '/app/';
 
     } catch (e) {
-        showError('Lỗi kết nối. Kiểm tra internet.');
+        console.error('[Login error]', e);
+        showError('Lỗi: ' + (e.message || 'Kiểm tra console để debug.'));
     } finally {
         setLoading(false);
     }
