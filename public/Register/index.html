@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Đăng Ký – TeamQuyTran</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Cpath d='M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5' stroke='%2322c55e' stroke-width='5' fill='none'/%3E%3Cpath d='M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5' stroke='%2322c55e' stroke-width='5' fill='none'/%3E%3Ccircle cx='32' cy='27' r='3.5' fill='%2322c55e'/%3E%3Ccircle cx='48' cy='27' r='3.5' fill='%2322c55e'/%3E%3Cpath d='M24 14 L32 5 L40 11 L48 5 L56 14' stroke='%23fbbf24' stroke-width='4' fill='none'/%3E%3C/svg%3E"><text y='.9em' font-size='90'>🐍</text></svg>">
 <link rel="stylesheet" href="../assets/css/global.css">
 <style>
 body { display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: auto; padding: 24px 0; }
@@ -29,7 +29,13 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 }
 
 .brand { text-align: center; margin-bottom: 28px; }
-.brand-snake { font-size: 48px; display: block; margin-bottom: 6px; animation: snakeWiggle 3s ease-in-out infinite; filter: drop-shadow(0 0 10px rgba(34,197,94,0.5)); }
+.brand-snake {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+    animation: snakeWiggle 3s ease-in-out infinite;
+}
 .brand-name { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, #86efac, #22c55e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
 .page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
@@ -96,7 +102,16 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 <div class="auth-card snake-border">
     <div id="formSection">
         <div class="brand">
-            <span class="brand-snake">🐍</span>
+            <span class="brand-snake">
+            <svg width="48" height="48" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--accent);filter:drop-shadow(0 0 10px rgba(34,197,94,0.5))">
+                <path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5C27.5 63.5 24 65 21 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                <path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5C52.5 63.5 56 65 59 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                <circle cx="32" cy="27" r="3.5" fill="currentColor"/><circle cx="48" cy="27" r="3.5" fill="currentColor"/>
+                <path d="M34 36 Q40 41 46 36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                <path d="M24 14 L32 5 L40 11 L48 5 L56 14" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <circle cx="24" cy="14" r="2.5" fill="#fbbf24"/><circle cx="40" cy="11" r="2.5" fill="#fbbf24"/><circle cx="56" cy="14" r="2.5" fill="#fbbf24"/>
+            </svg>
+        </span>
             <div class="brand-name">TeamQuyTran</div>
         </div>
 
@@ -121,7 +136,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
             <div class="input-group">
                 <label class="input-label">Tên hiển thị</label>
                 <div class="input-icon">
-                    <span class="icon">✦</span>
+                    <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
                     <input type="text" class="input" id="displayName" placeholder="Tên Bạn" maxlength="64">
                 </div>
             </div>
@@ -130,7 +145,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
         <div class="input-group">
             <label class="input-label">Email *</label>
             <div class="input-icon">
-                <span class="icon">✉</span>
+                <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
                 <input type="email" class="input" id="email" placeholder="email@example.com">
             </div>
         </div>
@@ -138,9 +153,9 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
         <div class="input-group">
             <label class="input-label">Mật khẩu *</label>
             <div class="input-icon">
-                <span class="icon">🔒</span>
+                <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
                 <input type="password" class="input" id="password" placeholder="Tối thiểu 8 ký tự" oninput="checkStrength()">
-                <button class="eye-toggle" onclick="togglePass('password')">👁</button>
+                <button class="eye-toggle" onclick="togglePass('password')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
             </div>
             <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
             <div class="strength-text" id="strengthText"></div>
@@ -149,9 +164,9 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
         <div class="input-group">
             <label class="input-label">Xác nhận mật khẩu *</label>
             <div class="input-icon">
-                <span class="icon">🔒</span>
+                <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
                 <input type="password" class="input" id="passwordConfirm" placeholder="Nhập lại mật khẩu">
-                <button class="eye-toggle" onclick="togglePass('passwordConfirm')">👁</button>
+                <button class="eye-toggle" onclick="togglePass('passwordConfirm')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
             </div>
         </div>
 
@@ -163,7 +178,8 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
         </div>
 
         <button class="btn btn-primary btn-register" onclick="handleRegister()" id="submitBtn">
-            🐍 Gửi yêu cầu đăng ký
+            <svg width="16" height="16" viewBox="0 0 80 80" fill="none" style="color:currentColor"><path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>
+            Gửi yêu cầu đăng ký
         </button>
 
         <div class="login-link">
@@ -172,7 +188,16 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
     </div>
 
     <div class="success-screen" id="successScreen">
-        <div class="success-icon">🐍</div>
+        <div class="success-icon">
+            <svg width="72" height="72" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--accent);animation:pulse 2s infinite">
+                <path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5C27.5 63.5 24 65 21 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                <path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5C52.5 63.5 56 65 59 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                <circle cx="32" cy="27" r="3.5" fill="currentColor"/><circle cx="48" cy="27" r="3.5" fill="currentColor"/>
+                <path d="M34 36 Q40 41 46 36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                <path d="M24 14 L32 5 L40 11 L48 5 L56 14" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <circle cx="24" cy="14" r="2.5" fill="#fbbf24"/><circle cx="40" cy="11" r="2.5" fill="#fbbf24"/><circle cx="56" cy="14" r="2.5" fill="#fbbf24"/>
+            </svg>
+        </div>
         <div class="success-title">Yêu cầu đã gửi!</div>
         <div class="success-desc">
             Yêu cầu đăng ký của bạn đã được gửi đến Admin.<br>
@@ -188,9 +213,8 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../assets/js/core.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    Auth.redirectIfAuth();
-
+document.addEventListener('DOMContentLoaded', async () => {
+    await Auth.redirectIfAuth();
     // Username validation debounce
     let usernameTimer;
     document.getElementById('username').addEventListener('input', e => {
@@ -287,7 +311,7 @@ async function handleRegister() {
     try {
         // Check username taken
         const { data: existing } = await supabase.from('profiles').select('id').eq('username', username).maybeSingle();
-        if (existing) { showError('Username đã được sử dụng.'); btn.disabled = false; btn.textContent = '🐍 Gửi yêu cầu đăng ký'; return; }
+        if (existing) { showError('Username đã được sử dụng.'); btn.disabled = false; btn.textContent = 'Gửi yêu cầu đăng ký'; return; }
 
         // Check email in signup_requests
         const { data: existReq } = await supabase.from('signup_requests').select('id, status').eq('email', email).maybeSingle();
@@ -295,7 +319,7 @@ async function handleRegister() {
             if (existReq.status === 'pending') { showError('Email này đã có yêu cầu đang chờ duyệt.'); }
             else if (existReq.status === 'rejected') { showError('Yêu cầu với email này đã bị từ chối.'); }
             btn.disabled = false;
-            btn.textContent = '🐍 Gửi yêu cầu đăng ký';
+            btn.textContent = 'Gửi yêu cầu đăng ký';
             return;
         }
 
@@ -320,7 +344,7 @@ async function handleRegister() {
         console.error(e);
     } finally {
         btn.disabled = false;
-        btn.textContent = '🐍 Gửi yêu cầu đăng ký';
+        btn.textContent = 'Gửi yêu cầu đăng ký';
     }
 }
 </script>

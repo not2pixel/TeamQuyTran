@@ -102,8 +102,18 @@ const LocalCache = {
 // AUTH HELPERS
 // ============================================================
 const Auth = {
+    async _getSupabase() {
+        // Wait until supabase is initialized (max 500ms)
+        let tries = 0;
+        while (typeof supabase === 'undefined' && tries++ < 10) {
+            await new Promise(r => setTimeout(r, 50));
+        }
+        return supabase;
+    },
+
     async getSession() {
-        const { data: { session } } = await supabase.auth.getSession();
+        const sb = await this._getSupabase();
+        const { data: { session } } = await sb.auth.getSession();
         return session;
     },
 
@@ -113,22 +123,27 @@ const Auth = {
     },
 
     async signOut() {
-        await supabase.from('profiles').update({ status: 'offline' }).eq('id', (await this.getSession())?.user?.id);
+        try {
+            const session = await this.getSession();
+            if (session?.user?.id) {
+                await supabase.from('profiles')
+                    .update({ status: 'offline' })
+                    .eq('id', session.user.id);
+            }
+        } catch(e) {}
         await supabase.auth.signOut();
         LocalCache.clear();
-        window.location.href = '/LogIn/';
+        window.location.replace('/LogIn/');
     },
 
-    requireAuth() {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (!session) window.location.href = '/LogIn/';
-        });
+    async requireAuth() {
+        const session = await this.getSession();
+        if (!session) window.location.replace('/LogIn/');
     },
 
-    redirectIfAuth() {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) window.location.href = '/app/';
-        });
+    async redirectIfAuth() {
+        const session = await this.getSession();
+        if (session) window.location.replace('/app/');
     }
 };
 

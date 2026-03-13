@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TeamQuyTran</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Cpath d='M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5' stroke='%2322c55e' stroke-width='5' fill='none'/%3E%3Cpath d='M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5' stroke='%2322c55e' stroke-width='5' fill='none'/%3E%3Ccircle cx='32' cy='27' r='3.5' fill='%2322c55e'/%3E%3Ccircle cx='48' cy='27' r='3.5' fill='%2322c55e'/%3E%3Cpath d='M24 14 L32 5 L40 11 L48 5 L56 14' stroke='%23fbbf24' stroke-width='4' fill='none'/%3E%3C/svg%3E"><text y='.9em' font-size='90'>🐍</text></svg>">
 <link rel="stylesheet" href="../assets/css/global.css">
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <style>
@@ -531,20 +531,56 @@ body { overflow: hidden; }
 </style>
 </head>
 <body>
+
+<!-- AUTH GATE: che toàn bộ app cho đến khi verify xong -->
+<div id="authGate" style="
+    position:fixed; inset:0; z-index:99999;
+    background:#0d1a0f;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:20px;
+">
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:spin 1.5s linear infinite">
+        <circle cx="32" cy="32" r="28" stroke="rgba(34,197,94,0.2)" stroke-width="4"/>
+        <path d="M32 4 A28 28 0 0 1 60 32" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <div style="color:#8ab891; font-family:'Space Grotesk',sans-serif; font-size:14px; letter-spacing:0.05em">
+        Đang xác thực...
+    </div>
+</div>
+<style>
+#app { visibility: hidden; }
+#app.ready { visibility: visible; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
 <div id="app">
     <!-- SERVERS BAR -->
     <div id="servers-bar">
-        <div class="server-icon active" id="homeBtn" data-tip="Trang chủ" onclick="switchView('home')">🐍</div>
+        <div class="server-icon active" id="homeBtn" data-tip="Trang chủ" onclick="switchView('home')">
+            <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 3C10.5 3 6 7.5 6 13c0 3.2 1.6 6 4.2 8l1.6 1.3c1.3 1 1.3 3 0 4C10.8 27.3 9 28 7.5 28" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M16 3C21.5 3 26 7.5 26 13c0 3.2-1.6 6-4.2 8l-1.6 1.3c-1.3 1-1.3 3 0 4C21.2 27.3 23 28 24.5 28" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                <circle cx="12.5" cy="11" r="1.5" fill="currentColor"/>
+                <circle cx="19.5" cy="11" r="1.5" fill="currentColor"/>
+                <path d="M13.5 15 Q16 17 18.5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <!-- Crown -->
+                <path d="M10 5.5 L13 2 L16 4.5 L19 2 L22 5.5" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+        </div>
         <div class="servers-sep"></div>
         <div id="serverList"></div>
-        <div class="server-icon" data-tip="Tạo server" onclick="showCreateServer()" style="font-size:24px">+</div>
+        <div class="server-icon" data-tip="Tạo server" onclick="showCreateServer()">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
     </div>
 
     <!-- CHANNEL SIDEBAR -->
     <div id="channel-sidebar">
         <div class="sidebar-header" id="sidebarHeader">
             <span id="sidebarTitle">TeamQuyTran</span>
-            <span id="sidebarMenu" onclick="showServerSettings(event)">⚙</span>
+            <span id="sidebarMenu" onclick="showServerSettings(event)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            </span>
         </div>
         <div class="channel-list" id="channelList">
             <!-- Dynamic content -->
@@ -556,9 +592,15 @@ body { overflow: hidden; }
                 <div class="user-panel-tag" id="selfStatus">● online</div>
             </div>
             <div class="user-panel-actions">
-                <button class="btn-icon btn" onclick="showStatusMenu(event)" data-tip="Đổi trạng thái">🟢</button>
-                <button class="btn-icon btn" onclick="showSettings()" data-tip="Cài đặt">⚙</button>
-                <button class="btn-icon btn" onclick="Auth.signOut()" data-tip="Đăng xuất">🚪</button>
+                <button class="btn-icon btn" onclick="showStatusMenu(event)" data-tip="Đổi trạng thái">
+                    <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#22c55e"/><circle cx="8" cy="8" r="3" fill="#0d1a0f"/></svg>
+                </button>
+                <button class="btn-icon btn" onclick="showSettings()" data-tip="Cài đặt">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                </button>
+                <button class="btn-icon btn" onclick="Auth.signOut()" data-tip="Đăng xuất">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -567,7 +609,20 @@ body { overflow: hidden; }
     <div id="main-area">
         <!-- Welcome / Empty state -->
         <div class="welcome-screen" id="welcomeScreen">
-            <div class="welcome-icon">🐍</div>
+            <div class="welcome-icon">
+                <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:var(--accent)">
+                    <path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5C27.5 63.5 24 65 21 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                    <path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5C52.5 63.5 56 65 59 65" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                    <circle cx="32" cy="27" r="3.5" fill="currentColor"/>
+                    <circle cx="48" cy="27" r="3.5" fill="currentColor"/>
+                    <path d="M34 36 Q40 41 46 36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+                    <!-- Crown -->
+                    <path d="M24 14 L32 5 L40 11 L48 5 L56 14" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="24" cy="14" r="2.5" fill="#fbbf24"/>
+                    <circle cx="40" cy="11" r="2.5" fill="#fbbf24"/>
+                    <circle cx="56" cy="14" r="2.5" fill="#fbbf24"/>
+                </svg>
+            </div>
             <h2 class="welcome-title">TeamQuyTran</h2>
             <p>Hãy sống như một con rắn.</p>
             <p class="text-sm">Chọn một kênh hoặc DM để bắt đầu trò chuyện</p>
@@ -580,9 +635,15 @@ body { overflow: hidden; }
                 <span class="chat-header-name" id="chatName">channel</span>
                 <span class="chat-header-topic" id="chatTopic"></span>
                 <div class="chat-header-actions">
-                    <button class="btn-icon btn" onclick="toggleMembers()" data-tip="Danh sách thành viên">👥</button>
-                    <button class="btn-icon btn" onclick="showPinnedMessages()" data-tip="Tin nhắn ghim">📌</button>
-                    <button class="btn-icon btn" onclick="showSearch()" data-tip="Tìm kiếm">🔍</button>
+                    <button class="btn-icon btn" onclick="toggleMembers()" data-tip="Danh sách thành viên">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </button>
+                    <button class="btn-icon btn" onclick="showPinnedMessages()" data-tip="Tin nhắn ghim">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v3.76z"/></svg>
+                    </button>
+                    <button class="btn-icon btn" onclick="showSearch()" data-tip="Tìm kiếm">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -605,17 +666,23 @@ body { overflow: hidden; }
                 <div class="message-input-wrapper">
                     <div class="attachment-preview" id="attachmentPreview"></div>
                     <div class="input-row">
-                        <button class="btn-icon btn" onclick="triggerFileUpload()" data-tip="Đính kèm file">📎</button>
+                        <button class="btn-icon btn" onclick="triggerFileUpload()" data-tip="Đính kèm file">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                        </button>
                         <textarea class="msg-input" id="msgInput" placeholder="Nhắn tin..." rows="1"
                             onkeydown="handleInputKeydown(event)"
                             oninput="handleInputResize(this); sendTyping()"></textarea>
                         <div class="input-actions">
-                            <button class="btn-icon btn" onclick="showEmojiPicker()" data-tip="Emoji">😊</button>
-                            <button class="btn-icon btn" onclick="sendMessage()" data-tip="Gửi" style="color:var(--accent)">➤</button>
+                            <button class="btn-icon btn" onclick="showEmojiPicker()" data-tip="Emoji">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                            </button>
+                            <button class="btn-icon btn" onclick="sendMessage()" data-tip="Gửi" style="color:var(--accent)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></svg>
+                            </button>
                         </div>
                     </div>
                     <div class="bot-mode-bar" id="botModeBar">
-                        <span>🐍 QuýBot chế độ:</span>
+                        <span style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 80 80" fill="none" style="color:var(--accent)"><path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg> QuýBot chế độ:</span>
                         <button class="bot-mode-btn active" onclick="setBotMode('cold', this)">❄ Lạnh lùng</button>
                         <button class="bot-mode-btn" onclick="setBotMode('romantic', this)">🌹 Lãng mạn</button>
                         <button class="bot-mode-btn" onclick="setBotMode('evil', this)">😈 Ác độc</button>
@@ -673,13 +740,31 @@ const AppState = {
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = '/LogIn/'; return; }
+    // Supabase chưa chắc init xong — đợi core.js init
+    await new Promise(r => setTimeout(r, 50));
+
+    let session = null;
+    try {
+        const res = await supabase.auth.getSession();
+        session = res.data.session;
+    } catch(e) {}
+
+    if (!session) {
+        window.location.replace('/LogIn/');
+        return;
+    }
 
     AppState.user = session.user;
     AppState.profile = await Auth.getProfile(session.user.id);
 
     if (!AppState.profile) { await Auth.signOut(); return; }
+
+    // Reveal app, remove gate
+    document.getElementById('app').classList.add('ready');
+    const gate = document.getElementById('authGate');
+    gate.style.opacity = '0';
+    gate.style.transition = 'opacity 0.3s';
+    setTimeout(() => gate.remove(), 300);
 
     // Update UI
     updateSelfPanel();
@@ -783,7 +868,14 @@ function renderChannels() {
 
     // Bot channel
     html += `<div class="channel-category">🤖 Bot</div>`;
-    html += `<div class="channel-item" onclick="openBotChannel()"><span class="channel-icon">🐍</span><span class="channel-name">quýbot</span></div>`;
+    html += `<div class="channel-item" onclick="openBotChannel()">
+    <span class="channel-icon" style="display:flex;align-items:center">
+        <svg width="14" height="14" viewBox="0 0 80 80" fill="none" style="color:var(--accent)">
+            <path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+            <path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+    </span>
+    <span class="channel-name">quýbot</span></div>`;
 
     list.innerHTML = html;
 }
@@ -892,9 +984,9 @@ function openBotChannel() {
 
     document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
 
-    document.getElementById('chatIcon').textContent = '🐍';
+    document.getElementById('chatIcon').innerHTML = '<svg width="16" height="16" viewBox="0 0 80 80" fill="none" style="color:var(--accent)"><path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>';
     document.getElementById('chatName').textContent = 'QuýBot';
-    document.getElementById('chatTopic').textContent = 'Chat với QuýBot 🤖 — Hỗ trợ ảnh, txt, pdf';
+    document.getElementById('chatTopic').textContent = 'Chat với QuýBot — Hỗ trợ ảnh, txt, pdf';
     document.getElementById('botModeBar').classList.add('show');
     document.getElementById('msgInput').placeholder = 'Hỏi QuýBot gì đó...';
 
@@ -954,7 +1046,7 @@ function renderMembers() {
 
     document.getElementById('membersList').innerHTML =
         memberHtml(online, '🟢 Online') +
-        memberHtml(offline, '⚪ Offline');
+        memberHtml(offline, '○ Offline');
 }
 
 function toggleMembers() {
@@ -989,7 +1081,7 @@ function renderMessages(messages, scroll = true) {
     const list = document.getElementById('messagesList');
     if (!messages.length) {
         list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-faint)">
-            Chưa có tin nhắn nào. Hãy bắt đầu! 🐍
+            Chưa có tin nhắn nào. Hãy bắt đầu!
         </div>`;
         return;
     }
@@ -1025,7 +1117,7 @@ function renderMessages(messages, scroll = true) {
 
 function renderMessage(msg, continued = false) {
     const p = msg.profiles || {};
-    const name = p.display_name || p.username || (msg.is_bot ? '🐍 QuýBot' : 'Unknown');
+    const name = p.display_name || p.username || (msg.is_bot ? 'QuýBot' : 'Unknown');
     const role = msg.is_bot ? 'bot' : (p.role || 'user');
     const avatarContent = p.avatar_url ? `<img src="${p.avatar_url}" alt="">` : name[0].toUpperCase();
 
@@ -1042,7 +1134,7 @@ function renderMessage(msg, continued = false) {
             return `<img class="msg-image" src="${att.url}" alt="${att.name}" onclick="openLightbox('${att.url}')">`;
         }
         return `<div class="msg-file" onclick="window.open('${att.url}')">
-            📄 <span>${att.name}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> <span>${att.name}</span>
         </div>`;
     }).join('');
 
@@ -1066,11 +1158,11 @@ function renderMessage(msg, continued = false) {
                 ${renderReactions(msg)}
             </div>
             <div class="msg-actions">
-                <button class="action-btn" onclick="addReaction('${msg.id}')" data-tip="React">😊</button>
-                <button class="action-btn" onclick="replyTo('${msg.id}', '${name}')" data-tip="Trả lời">↩</button>
-                ${isSelf ? `<button class="action-btn" onclick="editMessage('${msg.id}')" data-tip="Chỉnh sửa">✏</button>` : ''}
-                ${(isSelf || ['admin','moderator'].includes(AppState.profile?.role)) ? `<button class="action-btn danger" onclick="deleteMessage('${msg.id}')" data-tip="Xóa">🗑</button>` : ''}
-                <button class="action-btn" onclick="pinMessage('${msg.id}')" data-tip="Ghim">📌</button>
+                <button class="action-btn" onclick="addReaction('${msg.id}')" data-tip="React"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
+                <button class="action-btn" onclick="replyTo('${msg.id}', '${name}')" data-tip="Trả lời"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>
+                ${isSelf ? `<button class="action-btn" onclick="editMessage('${msg.id}')" data-tip="Chỉnh sửa"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+                ${(isSelf || ['admin','moderator'].includes(AppState.profile?.role)) ? `<button class="action-btn danger" onclick="deleteMessage('${msg.id}')" data-tip="Xóa"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+                <button class="action-btn" onclick="pinMessage('${msg.id}')" data-tip="Ghim"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v3.76z"/></svg></button>
             </div>
         </div>
     `;
@@ -1178,7 +1270,7 @@ async function sendBotMessage() {
     const list = document.getElementById('messagesList');
     list.insertAdjacentHTML('beforeend', `
         <div id="${thinkId}" class="bot-thinking">
-            <div class="avatar avatar-40">🐍</div>
+            <div class="avatar avatar-40" style="overflow:visible"><svg width="24" height="24" viewBox="0 0 80 80" fill="none" style="color:var(--accent)"><path d="M40 8C27 8 17 18 17 31c0 7.5 3.5 14 9 18.5l3.5 2.8c3 2.5 3 7 0 9.5" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><path d="M40 8C53 8 63 18 63 31c0 7.5-3.5 14-9 18.5l-3.5 2.8c-3 2.5-3 7 0 9.5" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></div>
             <div><div class="msg-author bot">QuýBot</div>
             <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
         </div>
@@ -1213,7 +1305,7 @@ async function sendBotMessage() {
         document.getElementById(thinkId)?.remove();
         const errMsg = {
             id: `err_${Date.now()}`,
-            content: '🐍 QuýBot không phản hồi được. Kiểm tra GROQ API key.',
+            content: 'QuýBot không phản hồi được. Kiểm tra GROQ API key.',
             created_at: new Date().toISOString(),
             profiles: { display_name: 'QuýBot', username: 'quybot', role: 'bot' },
             is_bot: true,
@@ -1307,7 +1399,7 @@ function addAttachmentPreview(att) {
     thumb.id = `att_${idx}`;
     thumb.innerHTML = att.type === 'image'
         ? `<img src="${att.preview || att.url}"><span class="truncate" style="max-width:120px">${att.name}</span><button class="att-remove" onclick="removeAttachment(${idx})">✕</button>`
-        : `📄 <span class="truncate">${att.name}</span><button class="att-remove" onclick="removeAttachment(${idx})">✕</button>`;
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> <span class="truncate">${att.name}</span><button class="att-remove" onclick="removeAttachment(${idx})">✕</button>`;
 
     preview.appendChild(thumb);
 }
@@ -1358,7 +1450,7 @@ async function editMessage(msgId) {
 
 async function pinMessage(msgId) {
     const { error } = await supabase.from('messages').update({ pinned: true }).eq('id', msgId);
-    if (!error) Toast.success('Đã ghim tin nhắn 📌');
+    if (!error) Toast.success('Đã ghim tin nhắn');
 }
 
 function addReaction(msgId) {
@@ -1477,7 +1569,7 @@ function showCreateServer() {
             <label class="input-label">Mô tả</label>
             <input type="text" class="input" id="newServerDesc" placeholder="Mô tả ngắn...">
         </div>
-        <button class="btn btn-primary w-full" onclick="createServer()">🐍 Tạo Server</button>
+        <button class="btn btn-primary w-full" onclick="createServer()">Tạo Server</button>
     `);
 }
 
@@ -1528,8 +1620,8 @@ function showUserProfile(userId) {
         </div>
         ${userId !== AppState.user?.id ? `
         <div style="display:flex;gap:8px;justify-content:center;margin-top:16px">
-            <button class="btn btn-primary btn-sm" onclick="startDM('${userId}'); closeModal()">💌 Nhắn tin</button>
-            <button class="btn btn-ghost btn-sm" onclick="sendFriendRequest('${userId}'); closeModal()">➕ Kết bạn</button>
+            <button class="btn btn-primary btn-sm" onclick="startDM('${userId}'); closeModal()">Nhắn tin</button>
+            <button class="btn btn-ghost btn-sm" onclick="sendFriendRequest('${userId}'); closeModal()">Kết bạn</button>
         </div>
         ` : ''}
     `);
@@ -1602,7 +1694,7 @@ async function selectDM(channelId, name, status) {
     AppState.currentChannel = { id: channelId, name: name || 'DM', is_dm: true };
     AppState.isBotChannel = false;
 
-    document.getElementById('chatIcon').textContent = '💌';
+    document.getElementById('chatIcon').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
     document.getElementById('chatName').textContent = name || 'DM';
     document.getElementById('chatTopic').textContent = '';
     document.getElementById('botModeBar').classList.remove('show');
@@ -1617,7 +1709,7 @@ async function sendFriendRequest(userId) {
     if (error) {
         Toast.error('Đã gửi yêu cầu kết bạn rồi hoặc lỗi xảy ra.');
     } else {
-        Toast.success('Đã gửi yêu cầu kết bạn! 🐍');
+        Toast.success('Đã gửi yêu cầu kết bạn!');
     }
 }
 
@@ -1650,7 +1742,7 @@ async function setStatus(status) {
 function showSettings() {
     showModal(`
         <div class="modal-header">
-            <h3 class="modal-title">⚙ Cài đặt</h3>
+            <h3 class="modal-title">Cài đặt</h3>
             <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
         <div class="input-group">
@@ -1663,10 +1755,10 @@ function showSettings() {
         </div>
         ${AppState.profile?.role === 'admin' ? `
         <div class="divider">Admin Panel</div>
-        <button class="btn btn-ghost w-full mb-2" onclick="showSignupRequests()">📋 Yêu cầu đăng ký</button>
+        <button class="btn btn-ghost w-full mb-2" onclick="showSignupRequests()">Yêu cầu đăng ký</button>
         ` : ''}
         <button class="btn btn-primary w-full mt-4" onclick="saveSettings()">Lưu</button>
-        <button class="btn btn-danger w-full mt-2" onclick="Auth.signOut()">🚪 Đăng xuất</button>
+        <button class="btn btn-danger w-full mt-2" onclick="Auth.signOut()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Đăng xuất</button>
     `);
 }
 
@@ -1687,7 +1779,7 @@ async function showSignupRequests() {
 
     showModal(`
         <div class="modal-header">
-            <h3 class="modal-title">📋 Yêu cầu đăng ký (${data?.length || 0})</h3>
+            <h3 class="modal-title">Yêu cầu đăng ký (${data?.length || 0})</h3>
             <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
         <div style="max-height:400px;overflow-y:auto">
@@ -1702,7 +1794,7 @@ async function showSignupRequests() {
                         <span class="text-xs text-muted">${TimeUtil.format(req.created_at)}</span>
                     </div>
                     <div style="display:flex;gap:8px">
-                        <button class="btn btn-primary btn-sm" onclick="approveRequest('${req.id}', '${req.email}', '${req.username}', '${req.password_hash}', '${req.display_name || req.username}')">✓ Duyệt</button>
+                        <button class="btn btn-primary btn-sm" onclick="approveRequest('${req.id}', '${req.email}', '${req.username}', '${req.password_hash}', '${req.display_name || req.username}')">Duyệt</button>
                         <button class="btn btn-danger btn-sm" onclick="rejectRequest('${req.id}')">✕ Từ chối</button>
                     </div>
                 </div>
