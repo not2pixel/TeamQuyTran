@@ -792,17 +792,18 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadServers();
         await loadDMs();
 
-    // Subscribe to realtime
-    subscribeGlobal();
+        // Subscribe to realtime
+        subscribeGlobal();
 
-    // Set online
-    await db().from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+        // Set online
+        await db().from('profiles').update({ status: 'online', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
 
-    // Handle page unload
-    window.addEventListener('beforeunload', () => {
-        db().from('profiles').update({ status: 'offline', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
-    });
-});
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            db().from('profiles').update({ status: 'offline', last_seen: new Date().toISOString() }).eq('id', AppState.user.id);
+        });
+    }); // end onAuthStateChange
+}); // end DOMContentLoaded
 
 // ============================================================
 // SELF PANEL
