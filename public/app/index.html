@@ -1280,7 +1280,7 @@ async function handleFileSelect(e) {
             reader.onload = async (ev) => {
                 att.preview = ev.target.result;
                 try {
-                    att.url = await GitHubUploader.upload(file);
+                    att.url = await Uploader.upload(file);
                 } catch(err) {
                     att.url = ev.target.result; // fallback to data URL
                 }
