@@ -6,6 +6,8 @@
 <title>QuyTranTeam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root {
   --bg0: #0a0a0f;
@@ -330,56 +332,19 @@ Với file/ảnh: bình luận châm biếm kiểu đặc trưng của mình.`
 ];
 
 /* ================================================================
-   MARKDOWN RENDERER (full support)
+   MARKDOWN — dùng marked.js
    ================================================================ */
 const MD = {
   render(text) {
     if (!text) return '';
-    let t = text
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    // Code blocks
-    t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
-      `<pre><code class="lang-${lang}">${code.trim()}</code></pre>`);
-    // Inline code
-    t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>');
-    // Headings
-    t = t.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-    t = t.replace(/^## (.+)$/gm,  '<h2>$1</h2>');
-    t = t.replace(/^# (.+)$/gm,   '<h1>$1</h1>');
-    // Bold, italic, strikethrough
-    t = t.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-    t = t.replace(/\*\*(.+?)\*\*/g,     '<strong>$1</strong>');
-    t = t.replace(/__(.+?)__/g,          '<strong>$1</strong>');
-    t = t.replace(/\*(.+?)\*/g,          '<em>$1</em>');
-    t = t.replace(/_(.+?)_/g,            '<em>$1</em>');
-    t = t.replace(/~~(.+?)~~/g,          '<del>$1</del>');
-    // Blockquote
-    t = t.replace(/^&gt; (.+)/gm, '<blockquote>$1</blockquote>');
-    // HR
-    t = t.replace(/^---$/gm, '<hr>');
-    // Tables
-    t = t.replace(/^\|(.+)\|$/gm, (line) => {
-      const cells = line.split('|').filter(Boolean).map(c => c.trim());
-      return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`;
-    });
-    t = t.replace(/(<tr>.*<\/tr>\n?)+/g, m => `<table>${m}</table>`);
-    // Lists
-    t = t.replace(/^[-*] (.+)/gm, '<li>$1</li>');
-    t = t.replace(/^\d+\. (.+)/gm, '<li>$1</li>');
-    t = t.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
-    // Links
-    t = t.replace(/\[(.+?)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    t = t.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-    // Paragraphs
-    t = t.split(/\n\n+/).map(para => {
-      para = para.trim();
-      if (!para) return '';
-      if (/^<(h[1-6]|ul|ol|pre|blockquote|table|hr)/.test(para)) return para;
-      return `<p>${para.replace(/\n/g, '<br>')}</p>`;
-    }).join('');
-
-    return t;
+    try {
+      return marked.parse(text, {
+        breaks: true,
+        gfm: true,
+        headerIds: false,
+        mangle: false,
+      });
+    } catch { return text.replace(/\n/g, '<br>'); }
   }
 };
 
@@ -630,24 +595,44 @@ async function sendMsg() {
   scrollBot();
 
   try {
-    // Build message content — include file descriptions
-    let userContent = text;
-    if (atts.length) {
-      const attDesc = atts.map(a =>
-        a.type === 'image' ? `[Ảnh đính kèm: ${a.name}]` : a.type === 'pdf' ? `[PDF đính kèm: ${a.name}]` : `[File văn bản: ${a.name}]\nNội dung: ${a.textContent || '(không đọc được)'}`
-      ).join('\n');
-      userContent = [text, attDesc].filter(Boolean).join('\n');
+    // Build message — hỗ trợ ảnh (vision) + text/pdf (text content)
+    const images = atts.filter(a => a.type === 'image' && a.base64);
+    const textAtts = atts.filter(a => a.type !== 'image');
+
+    // Nội dung text + file text/pdf
+    let textParts = [text];
+    textAtts.forEach(a => {
+      if (a.textContent) textParts.push(`[${a.type === 'pdf' ? 'PDF' : 'File'}: ${a.name}]\nNội dung:\n${a.textContent}`);
+      else textParts.push(`[File đính kèm: ${a.name}]`);
+    });
+    const textContent = textParts.filter(Boolean).join('\n\n');
+
+    // Build last user message — multipart nếu có ảnh
+    let lastUserMsg;
+    if (images.length) {
+      lastUserMsg = {
+        role: 'user',
+        content: [
+          ...(textContent ? [{ type: 'text', text: textContent }] : []),
+          ...images.map(a => ({
+            type: 'image_url',
+            image_url: { url: a.base64 }
+          }))
+        ]
+      };
+    } else {
+      lastUserMsg = { role: 'user', content: textContent || '...' };
     }
 
     const messages = [
       ...getHistory().slice(0, -1).slice(-10).map(m => ({ role: m.role, content: m.content || '' })),
-      { role: 'user', content: userContent }
+      lastUserMsg
     ];
 
     const r = await fetch(API.chat, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: State.bot.prompt, messages })
+      body: JSON.stringify({ prompt: State.bot.prompt, messages, hasImages: images.length > 0 })
     });
 
     document.getElementById(thinkId)?.remove();
@@ -679,25 +664,48 @@ async function onFile(e) {
   for (const file of Array.from(e.target.files)) {
     if (file.size > 8 * 1024 * 1024) { Toast.error(`${file.name}: quá lớn (max 8MB)`); continue; }
     if (!allowed.includes(file.type)) { Toast.error(`${file.name}: không hỗ trợ`); continue; }
-    const att = { name: file.name, type: file.type.startsWith('image/') ? 'image' : file.type === 'application/pdf' ? 'pdf' : 'text', url: '', textContent: '' };
-    
+    const att = { name: file.name, type: file.type.startsWith('image/') ? 'image' : file.type === 'application/pdf' ? 'pdf' : 'text', url: '', base64: '', textContent: '' };
+
     if (att.type === 'image') {
-      const reader = new FileReader();
-      reader.onload = ev => {
-        att.preview = ev.target.result;
-        att.url = ev.target.result;
-        addThumb(att);
-      };
-      reader.readAsDataURL(file);
+      // Đọc base64 để gửi cho bot xem ảnh
+      await new Promise(res => {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          att.preview = ev.target.result;
+          att.url = ev.target.result;
+          att.base64 = ev.target.result; // data:image/...;base64,...
+          res();
+        };
+        reader.readAsDataURL(file);
+      });
     } else if (att.type === 'text') {
-      const reader = new FileReader();
-      reader.onload = ev => { att.textContent = ev.target.result.slice(0, 3000); addThumb(att); };
-      reader.readAsText(file);
-    } else {
-      att.url = URL.createObjectURL(file);
-      addThumb(att);
+      await new Promise(res => {
+        const reader = new FileReader();
+        reader.onload = ev => { att.textContent = ev.target.result.slice(0, 4000); res(); };
+        reader.readAsText(file);
+      });
+    } else if (att.type === 'pdf') {
+      // Extract text từ PDF bằng pdf.js
+      try {
+        Toast.info(`Đang đọc ${file.name}...`);
+        const ab = await file.arrayBuffer();
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+        let text = '';
+        for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+          const page = await pdf.getPage(i);
+          const tc = await page.getTextContent();
+          text += tc.items.map(s => s.str).join(' ') + '\n';
+        }
+        att.textContent = text.slice(0, 4000);
+        if (pdf.numPages > 10) att.textContent += `\n...(còn ${pdf.numPages-10} trang nữa)`;
+      } catch (err) {
+        att.textContent = '(Không đọc được PDF)';
+      }
     }
+
     State.pendingAtts.push(att);
+    addThumb(att);
   }
   e.target.value = '';
 }
